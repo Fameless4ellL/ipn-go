@@ -9,7 +9,10 @@ import (
 	"syscall"
 	"time"
 
+	"go-blocker/internal/database"
+	"go-blocker/internal/payment"
 	"go-blocker/internal/server"
+	worker "go-blocker/internal/worker/payment"
 )
 
 func gracefulShutdown(apiServer *http.Server, done chan bool) {
@@ -46,6 +49,13 @@ func main() {
 
 	// Run graceful shutdown in a separate goroutine
 	go gracefulShutdown(server, done)
+
+	db := database.New()
+	repo := database.NewPaymentRepository(db)
+	service := payment.NewPaymentService(repo)
+
+	// Start background worker
+	worker.Start(service)
 
 	err := server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
