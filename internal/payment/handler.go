@@ -1,6 +1,7 @@
 package payment
 
 import (
+	"go-blocker/internal/storage"
 	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -31,6 +32,7 @@ func (h *Handler) Webhook(c *gin.Context) {
 		return
 	}
 
+	storage.PaymentAddressStore.Set(req.Address, obj.ID)
 	resp := WebhookResponse{ID: obj.ID.String(), Status: obj.Status}
 	c.JSON(http.StatusOK, resp)
 }
@@ -54,13 +56,16 @@ func (h *Handler) Status(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"id":           payment.ID.String(),
-		"status":       payment.Status,
-		"amount":       payment.Amount,
-		"currency":     payment.Currency,
-		"address":      payment.Address,
-		"created_at":   payment.CreatedAt,
-		"expires_at":   payment.ExpiresAt,
-		"callback_url": payment.CallbackURL,
+		"id":            payment.ID.String(),
+		"status":        payment.Status,
+		"amount":        payment.Amount,
+		"actual_amount": payment.ReceivedAmount,
+		"currency":      payment.Currency,
+		"address":       payment.Address,
+		"created_at":    payment.CreatedAt,
+		"expires_at":    payment.ExpiresAt,
+		"txid":          payment.TxID,
+		"stuck":         payment.IsStuck,
+		"callback_url":  payment.CallbackURL,
 	})
 }

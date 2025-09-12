@@ -3,13 +3,12 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"os"
-	"strconv"
 	"time"
 
 	_ "github.com/joho/godotenv/autoload"
 	"gorm.io/gorm"
 
+	"go-blocker/internal/config"
 	"go-blocker/internal/database"
 )
 
@@ -19,9 +18,8 @@ type Server struct {
 }
 
 func NewServer() *http.Server {
-	port, _ := strconv.Atoi(os.Getenv("PORT"))
 	NewServer := &Server{
-		port: port,
+		port: config.Port,
 		db:   database.New(),
 	}
 

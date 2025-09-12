@@ -1,21 +1,20 @@
 package payment_worker
 
 import (
+	"go-blocker/internal/config"
 	"go-blocker/internal/payment"
-	"log"
 	"time"
 )
 
 func Start(service *payment.PaymentService) {
 	go func() {
-		ticker := time.NewTicker(5 * time.Minute)
+		ticker := time.NewTicker(1 * time.Minute)
 		defer ticker.Stop()
-
+		
 		for range ticker.C {
-			log.Println("[Worker] Running payment expiration check...")
 			err := service.ExpireTimedOutPayments()
 			if err != nil {
-				log.Println("[Worker] Error:", err)
+				config.Log.Infof("[Worker] Error: %e", err)
 			}
 		}
 	}()

@@ -2,16 +2,17 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"net/http"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"go-blocker/internal/config"
 	"go-blocker/internal/database"
 	"go-blocker/internal/payment"
 	"go-blocker/internal/server"
+	"go-blocker/internal/storage"
+	blocker "go-blocker/internal/worker/blocker"
 	worker "go-blocker/internal/worker/payment"
 )
 
@@ -23,25 +24,23 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 	// Listen for the interrupt signal.
 	<-ctx.Done()
 
-	log.Println("shutting down gracefully, press Ctrl+C again to force")
-	stop() // Allow Ctrl+C to force shutdown
+	config.Log.Infoln("shutting down gracefully, press Ctrl+C again to force")
+	stop()
 
 	// The context is used to inform the server it has 5 seconds to finish
 	// the request it is currently handling
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := apiServer.Shutdown(ctx); err != nil {
-		log.Printf("Server forced to shutdown with error: %v", err)
+		config.Log.Infof("Server forced to shutdown with error: %v", err)
 	}
 
-	log.Println("Server exiting")
-
-	// Notify the main goroutine that the shutdown is complete
+	config.Log.Infoln("Server exiting")
 	done <- true
 }
 
 func main() {
-
+	config.Init()
 	server := server.NewServer()
 
 	// Create a done channel to signal when the shutdown is complete
@@ -54,15 +53,15 @@ func main() {
 	repo := database.NewPaymentRepository(db)
 	service := payment.NewPaymentService(repo)
 
-	// Start background worker
+	storage.InitStores() // Initialize the global stores, including payment
+	blocker.Start(service)
 	worker.Start(service)
 
 	err := server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
-		panic(fmt.Sprintf("http server error: %s", err))
+		config.Log.Panicf("http server error: %s", err)
 	}
 
-	// Wait for the graceful shutdown to complete
 	<-done
-	log.Println("Graceful shutdown complete.")
+	config.Log.Infoln("Graceful shutdown complete.")
 }
