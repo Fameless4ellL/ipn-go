@@ -1,7 +1,7 @@
 package blocker
 
 import (
-	"go-blocker/internal/config"
+	logger "go-blocker/internal/log"
 	"go-blocker/internal/payment"
 	"go-blocker/internal/rpc"
 	"go-blocker/internal/storage"
@@ -42,7 +42,7 @@ func Pending(
 
 			client, url, err := manager.GetClientForChain(rpc.ChainType(chain))
 			if err != nil {
-				config.Log.Debugf("[%s] No healthy RPC nodes for %s", chain, url)
+				logger.Log.Debugf("[%s] No healthy RPC nodes for %s", chain, url)
 				pendingMutex.Lock()
 				pending[chain] = false
 				pendingMutex.Unlock()
