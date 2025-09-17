@@ -9,6 +9,7 @@ import (
 
 	"go-blocker/internal/config"
 	"go-blocker/internal/database"
+	logger "go-blocker/internal/log"
 	"go-blocker/internal/payment"
 	"go-blocker/internal/server"
 	"go-blocker/internal/storage"
@@ -24,7 +25,7 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 	// Listen for the interrupt signal.
 	<-ctx.Done()
 
-	config.Log.Infoln("shutting down gracefully, press Ctrl+C again to force")
+	logger.Log.Infoln("shutting down gracefully, press Ctrl+C again to force")
 	stop()
 
 	// The context is used to inform the server it has 5 seconds to finish
@@ -32,10 +33,10 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := apiServer.Shutdown(ctx); err != nil {
-		config.Log.Infof("Server forced to shutdown with error: %v", err)
+		logger.Log.Infof("Server forced to shutdown with error: %v", err)
 	}
 
-	config.Log.Infoln("Server exiting")
+	logger.Log.Infoln("Server exiting")
 	done <- true
 }
 
@@ -59,9 +60,9 @@ func main() {
 
 	err := server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
-		config.Log.Panicf("http server error: %s", err)
+		logger.Log.Panicf("http server error: %s", err)
 	}
 
 	<-done
-	config.Log.Infoln("Graceful shutdown complete.")
+	logger.Log.Infoln("Graceful shutdown complete.")
 }

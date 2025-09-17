@@ -1,6 +1,7 @@
 package payment
 
 import (
+	constants "go-blocker/internal/const"
 	"go-blocker/internal/storage"
 	"net/http"
 
@@ -14,7 +15,7 @@ type Handler struct {
 }
 
 func (h *Handler) Webhook(c *gin.Context) {
-	var req WebhookRequest
+	var req constants.WebhookRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
@@ -33,7 +34,7 @@ func (h *Handler) Webhook(c *gin.Context) {
 	}
 
 	storage.PaymentAddressStore.Set(req.Address, obj.ID)
-	resp := WebhookResponse{ID: obj.ID.String(), Status: obj.Status}
+	resp := constants.WebhookResponse{ID: obj.ID.String(), Status: obj.Status}
 	c.JSON(http.StatusOK, resp)
 }
 
@@ -68,4 +69,24 @@ func (h *Handler) Status(c *gin.Context) {
 		"stuck":         payment.IsStuck,
 		"callback_url":  payment.CallbackURL,
 	})
+}
+
+func (h *Handler) CheckTx(c *gin.Context) {
+	var req constants.CheckTxRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	if !common.IsHexAddress(req.Address) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid address"})
+		return
+	}
+
+	// service here
+
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create payment"})
+	// 	return
+	// }
 }

@@ -1,18 +1,15 @@
-package watcher
+package provider
 
 import (
 	"context"
 	"fmt"
 	constants "go-blocker/internal/const"
 	logger "go-blocker/internal/log"
-	"go-blocker/internal/payment"
-	"go-blocker/internal/rpc"
 	"go-blocker/internal/storage"
 	"log"
 	"math/big"
 	"strings"
 
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -20,9 +17,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type USDT struct {
-	S *payment.PaymentService
-}
+type USDT struct{}
 
 func (w *USDT) Name() string {
 	return "USDT"
@@ -49,19 +44,6 @@ func (w *USDT) Abi() abi.ABI {
 	return parsedABI
 }
 
-func (w *USDT) HasActiveAddresses() bool {
-	return storage.PaymentAddressStore.Len() > 0
-}
-
-func (w *USDT) CheckTransactions(m *rpc.Manager, client *ethclient.Client, block []*types.Receipt) (uuid.UUID, error) {
-	for _, tx := range block {
-		w.Checklogs(client, tx)
-	}
-
-	return uuid.Nil, fmt.Errorf("no matching address found")
-
-}
-
 func (w *USDT) CheckAddress(address string) (uuid.UUID, error) {
 	// Base Transfer From - To
 	if id, ok := storage.PaymentAddressStore.Get(address); ok {
@@ -71,78 +53,40 @@ func (w *USDT) CheckAddress(address string) (uuid.UUID, error) {
 	return uuid.Nil, fmt.Errorf("no matching address found")
 }
 
-func (w *USDT) Checklogs(client *ethclient.Client, tx *types.Receipt) {
+func (w *USDT) Checklogs(tx *types.Receipt) (string, bool) {
 	for _, log := range tx.Logs {
-		if len(log.Topics) >= 3 {
-			toTopic := log.Topics[2]
-			if len(toTopic.Bytes()) == 32 {
-				to := common.BytesToAddress(toTopic.Bytes()[12:])
-				id, err := w.CheckAddress(to.String())
-				if err != nil {
-					continue
-				}
-				value := new(big.Int).SetBytes(log.Data)
-				usdt := new(big.Float).Quo(
-					new(big.Float).SetInt(value),
-					new(big.Float).SetInt(big.NewInt(1_000_000)),
-				).Text('f', 18)
-				txId := log.TxHash.Hex()
-				isContractMatch := tx.ContractAddress != w.Address()
-
-				w.S.Status(id, constants.StatusCompleted, &usdt, &txId, &isContractMatch)
-			}
+		if len(log.Topics) < 3 {
+			continue
 		}
-	}
-}
 
-func (w *USDT) GetPendingBalance(client *ethclient.Client, wallet common.Address) big.Float {
-	abi := w.Abi()
+		toTopic := log.Topics[2]
+		if len(toTopic.Bytes()) != 32 {
+			continue
+		}
 
-	data, err := abi.Pack("balanceOf", wallet)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	ERC20Address := w.Address()
-	msg := ethereum.CallMsg{
-		To:   &ERC20Address,
-		Data: data,
-	}
-
-	result, err := client.CallContract(context.Background(), msg, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var balance *big.Int
-	err = abi.UnpackIntoInterface(&balance, "balanceOf", result)
-	if err != nil {
-		return *big.NewFloat(0)
-	}
-	usdtBalance := new(big.Float).Quo(new(big.Float).SetInt(balance), big.NewFloat(float64(w.Decimals())))
-
-	if usdtBalance.Cmp(big.NewFloat(0)) > 0 {
-		logger.Log.Infof("USDT: Pending balance for address %s: %f", wallet.Hex(), usdtBalance)
-		id, err := w.CheckAddress(wallet.Hex())
+		to := common.BytesToAddress(toTopic.Bytes()[12:])
+		_, err := w.CheckAddress(to.String())
 		if err != nil {
-			return *usdtBalance
+			continue
 		}
-		w.S.Status(id, constants.StatusReceived, nil, nil, nil)
-		storage.PaymentAddressStore.SetPending(wallet.Hex(), true)
-	}
+		value := new(big.Int).SetBytes(log.Data)
+		usdt := new(big.Float).Quo(
+			new(big.Float).SetInt(value),
+			new(big.Float).SetInt(big.NewInt(1_000_000)),
+		).Text('f', 18)
+		isStuck := tx.ContractAddress != w.Address()
 
-	return *usdtBalance
+		return usdt, isStuck
+	}
+	return "", false
 }
 
-func (w *USDT) IsTransactionMatch(client *ethclient.Client, tx *constants.CheckTxRequest) (*types.Transaction, string, bool) {
-	Tx, _, err := client.TransactionByHash(context.Background(), common.HexToHash(tx.TxID))
+func (w *USDT) IsTransactionMatch(client *ethclient.Client, tx *constants.CheckTxRequest) (string, bool) {
+	Tx, err := client.TransactionReceipt(context.Background(), common.HexToHash(tx.TxID))
 	if err != nil {
 		logger.Log.Debugf("ETH: %s", err)
 	}
 
-	wei := Tx.Value()
-	eth := new(big.Float).Quo(new(big.Float).SetInt(wei), big.NewFloat(1e18)).Text('f', 18)
-	logger.Log.Infof("ETH: Incoming transaction %s, Amount: %s", Tx.Hash().Hex(), eth)
-
-	return Tx, eth, true
+	usdt, isStuck := w.Checklogs(Tx)
+	return usdt, isStuck
 }

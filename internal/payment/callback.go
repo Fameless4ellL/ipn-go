@@ -7,10 +7,12 @@ import (
 	"net/http"
 
 	"go-blocker/internal/config"
+	constants "go-blocker/internal/const"
+	logger "go-blocker/internal/log"
 	"go-blocker/internal/utils"
 )
 
-func SendCallback(p *Payment) {
+func SendCallback(p *constants.Payment) {
 	if p.CallbackURL == "" {
 		return
 	}
@@ -35,7 +37,7 @@ func SendCallback(p *Payment) {
 func SendRequest(url string, payload map[string]interface{}) {
 	resp, err := utils.Callback(url, payload)
 	if err != nil {
-		config.Log.Debugf("Failed to send callback: %v", err)
+		logger.Log.Debugf("Failed to send callback: %v", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -43,7 +45,7 @@ func SendRequest(url string, payload map[string]interface{}) {
 
 func Telegram(payload map[string]interface{}) {
 	if config.BotToken == "" || config.ChatId == "" {
-		config.Log.Infoln("Telegram bot token or chat ID not set")
+		logger.Log.Infoln("Telegram bot token or chat ID not set")
 		return
 	}
 
@@ -71,14 +73,14 @@ func Telegram(payload map[string]interface{}) {
 
 	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonData))
 	if err != nil {
-		config.Log.Infof("Telegram: Failed to create request: %v", err)
+		logger.Log.Infof("Telegram: Failed to create request: %v", err)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := utils.Retry(req, 3)
 	if err != nil {
-		config.Log.Debugf("Telegram: Failed to send message: %v", err)
+		logger.Log.Debugf("Telegram: Failed to send message: %v", err)
 		return
 	}
 	defer resp.Body.Close()

@@ -3,7 +3,7 @@ package blocker
 import (
 	"context"
 	"fmt"
-	"go-blocker/internal/config"
+	logger "go-blocker/internal/log"
 	"go-blocker/internal/payment"
 	"go-blocker/internal/rpc"
 	"go-blocker/internal/storage"
@@ -46,7 +46,7 @@ func IncomingTx(
 
 			client, url, err := manager.GetClientForChain(rpc.ChainType(chain))
 			if err != nil {
-				config.Log.Debugf("[%s] No healthy RPC nodes for %s", chain, url)
+				logger.Log.Debugf("[%s] No healthy RPC nodes for %s", chain, url)
 				processingMutex.Lock()
 				processing[chain] = false
 				processingMutex.Unlock()
@@ -54,7 +54,7 @@ func IncomingTx(
 			}
 			latest, err := client.BlockNumber(context.Background())
 			if err != nil {
-				config.Log.Debugf("[%s] Failed to get latest block from %s: %v", chain, url, err)
+				logger.Log.Debugf("[%s] Failed to get latest block from %s: %v", chain, url, err)
 				processingMutex.Lock()
 				processing[chain] = false
 				processingMutex.Unlock()
@@ -69,7 +69,7 @@ func IncomingTx(
 
 				err := Blocker(s, manager, watchers, client, latest, tracker)
 				if err != nil {
-					config.Log.Errorf("[%s] Blocker error: %v", chain, err)
+					logger.Log.Errorf("[%s] Blocker error: %v", chain, err)
 				}
 
 				time.Sleep(1 * time.Second)
@@ -94,13 +94,13 @@ func Blocker(
 		lastBlock = latest - 10 // fallback
 	}
 
-	config.Log.Infof("[%s] Looking between  %d | %d", chain, lastBlock, latest)
+	logger.Log.Infof("[%s] Looking between  %d | %d", chain, lastBlock, latest)
 
 	for blockNum := lastBlock + 1; blockNum <= latest; blockNum++ {
 		blockRef := w3.BlockNumberOrHashWithNumber(w3.BlockNumber(blockNum))
 		receipts, err := client.BlockReceipts(context.Background(), blockRef)
 		if err != nil {
-			config.Log.Debugf("[%s] Failed to get receipts for block %d: %v", chain, blockNum, err)
+			logger.Log.Debugf("[%s] Failed to get receipts for block %d: %v", chain, blockNum, err)
 			return fmt.Errorf("[%s] Failed to get receipts for block %d: %v", chain, blockNum, err)
 		}
 

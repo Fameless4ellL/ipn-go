@@ -2,7 +2,7 @@ package utils
 
 import (
 	"encoding/json"
-	"go-blocker/internal/config"
+	logger "go-blocker/internal/log"
 	"io"
 )
 
@@ -42,20 +42,20 @@ func TraceBlock(node string, blocknum string) ([]TraceResult, error) {
 	}
 	resp, err := Callback(node, payload)
 	if err != nil {
-		config.Log.Debugf("Failed to send callback: %v", err)
+		logger.Log.Debugf("Failed to send callback: %v", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		config.Log.Debugf("Failed to read callback: %v", err)
+		logger.Log.Debugf("Failed to read callback: %v", err)
 		return nil, err
 	}
 
 	var rpcResp JSONRPCResponse
 	if err := json.Unmarshal(body, &rpcResp); err != nil {
-		config.Log.Debugf("Failed to parse body callback: %v", err)
+		logger.Log.Debugf("Failed to parse body callback: %v", err)
 		return nil, err
 	}
 

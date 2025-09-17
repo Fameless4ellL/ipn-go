@@ -1,6 +1,7 @@
 package watcher
 
 import (
+	constants "go-blocker/internal/const"
 	"go-blocker/internal/rpc"
 	"math/big"
 
@@ -17,4 +18,5 @@ type CurrencyWatcher interface {
 	HasActiveAddresses() bool
 	CheckTransactions(m *rpc.Manager, client *ethclient.Client, block []*types.Receipt) (uuid.UUID, error)
 	GetPendingBalance(client *ethclient.Client, wallet common.Address) big.Float
+	IsTransactionMatch(client *ethclient.Client, tx *constants.CheckTxRequest) (*types.Transaction, string, bool)
 }

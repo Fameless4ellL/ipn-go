@@ -31,6 +31,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	paymentHandler := &payment.Handler{Service: paymentService}
 	pay.POST("/webhook", paymentHandler.Webhook)
 	pay.GET("/status/:id", paymentHandler.Status)
+	pay.POST("/check/transaction", paymentHandler.CheckTx)
 
 	return r
 }

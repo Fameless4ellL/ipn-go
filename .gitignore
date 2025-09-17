@@ -30,4 +30,5 @@ main
 *templ.go
 
 # OS X generated file
-.DS_Store
+*.DS_Store
+*.gitignore

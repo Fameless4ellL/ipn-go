@@ -1,4 +1,4 @@
-package payment
+package constants
 
 import (
 	"time"
@@ -33,4 +33,33 @@ type Payment struct {
 	IsStuck        bool          `json:"Stuck"`
 	CreatedAt      time.Time     `json:"created_at"`
 	ExpiresAt      time.Time     `json:"expires_at"`
+}
+
+// WebhookRequest represents the incoming webhook payload
+type WebhookRequest struct {
+	Address     string `json:"address"`
+	Network     string `json:"network"`
+	Currency    string `json:"currency"`
+	Amount      string `json:"amount"`
+	Timeout     int    `json:"timeout"`
+	CallbackURL string `json:"callback_url"`
+}
+
+// WebhookResponse represents the response to the webhook
+type WebhookResponse struct {
+	ID     string        `json:"id"`
+	Status PaymentStatus `json:"status"`
+}
+
+// CheckTxRequest represents the request to check a transaction
+type CheckTxRequest struct {
+	Address  string `json:"address"`
+	Currency string `json:"currency"`
+	TxID     string `json:"txid"`
+}
+
+// CheckTxResponse represents the response from checking a transaction
+type CheckTxResponse struct {
+	Status PaymentStatus `json:"status"`
+	Amount string        `json:"amount"`
 }

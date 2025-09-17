@@ -3,7 +3,8 @@ package watcher
 import (
 	"context"
 	"fmt"
-	"go-blocker/internal/config"
+	constants "go-blocker/internal/const"
+	logger "go-blocker/internal/log"
 	"go-blocker/internal/payment"
 	"go-blocker/internal/rpc"
 	"go-blocker/internal/storage"
@@ -35,7 +36,7 @@ func (w *ETH) Decimals() int {
 func (w *ETH) GetPendingBalance(client *ethclient.Client, wallet common.Address) big.Float {
 	balance, err := client.PendingBalanceAt(context.Background(), wallet)
 	if err != nil {
-		config.Log.Errorf("ETH: Error getting pending balance for address %s: %s", wallet.Hex(), err)
+		logger.Log.Errorf("ETH: Error getting pending balance for address %s: %s", wallet.Hex(), err)
 		return *big.NewFloat(0)
 	}
 
@@ -43,12 +44,12 @@ func (w *ETH) GetPendingBalance(client *ethclient.Client, wallet common.Address)
 
 	total := big.NewFloat(0).SetFloat64(0.06)
 	if ethBalance.Cmp(total) > 0 {
-		config.Log.Infof("ETH: Pending balance for address %s: %f", wallet.Hex(), ethBalance)
+		logger.Log.Infof("ETH: Pending balance for address %s: %f", wallet.Hex(), ethBalance)
 		id, err := w.CheckAddress(wallet.Hex())
 		if err != nil {
 			return *ethBalance
 		}
-		w.S.Status(id, payment.StatusReceived, nil, nil, nil)
+		w.S.Status(id, constants.StatusReceived, nil, nil, nil)
 		storage.PaymentAddressStore.SetPending(wallet.Hex(), true)
 	}
 	return *ethBalance
@@ -78,18 +79,14 @@ func (w *ETH) CheckTransactions(m *rpc.Manager, client *ethclient.Client, block 
 		if err != nil {
 			continue
 		}
-		Tx, _, err := client.TransactionByHash(context.Background(), tx.Hash())
-		if err != nil {
-			config.Log.Debugf("ETH: %s", err)
-		}
 
-		wei := Tx.Value()
-		eth := new(big.Float).Quo(new(big.Float).SetInt(wei), big.NewFloat(1e18)).Text('f', 18)
-		txid := tx.Hash().Hex()
-		config.Log.Infof("ETH: Incoming transaction %s, Amount: %s", tx.Hash().Hex(), eth)
+		var Tx *types.Transaction
+		var eth, txid string
+		Tx, eth, isSent = w.IsTransactionMatch(client, &constants.CheckTxRequest{TxID: tx.Hash().Hex()})
+		txid = Tx.Hash().Hex()
 
-		isSent = true
-		w.S.Status(id, payment.StatusCompleted, &eth, &txid, nil)
+		logger.Log.Infof("ETH: Incoming transaction %s, Amount: %s", tx.Hash().Hex(), eth)
+		w.S.Status(id, constants.StatusCompleted, &eth, &txid, nil)
 	}
 
 	if !isSent {
@@ -112,12 +109,12 @@ func (w *ETH) CheckAddress(address string) (uuid.UUID, error) {
 func (w *ETH) CheckInternalTxs(m *rpc.Manager, client *ethclient.Client, block *types.Receipt) {
 	_, url, err := m.GetClientForChain(rpc.ChainType(w.Chain()))
 	if err != nil {
-		config.Log.Debugf("[%s] No healthy RPC node for %s", w.Chain(), url)
+		logger.Log.Debugf("[%s] No healthy RPC node for %s", w.Chain(), url)
 		return
 	}
 	result, err := utils.TraceBlock(url, "0x"+block.BlockNumber.Text(16))
 	if err != nil {
-		config.Log.Debugf("[%s] No healthy TraceBlock for %s: %s", w.Chain(), url, err)
+		logger.Log.Debugf("[%s] No healthy TraceBlock for %s: %s", w.Chain(), url, err)
 		return
 	}
 	for _, tx := range result {
@@ -131,9 +128,22 @@ func (w *ETH) CheckInternalTxs(m *rpc.Manager, client *ethclient.Client, block *
 
 		eth := new(big.Float).Quo(new(big.Float).SetInt(wei), big.NewFloat(1e18)).Text('f', 18)
 		txid := tx.TransactionHash
-		config.Log.Infof("ETH: Incoming transaction %s, Amount: %s", txid, eth)
+		logger.Log.Infof("ETH: Incoming transaction %s, Amount: %s", txid, eth)
 
 		IsStuck := true
-		w.S.Status(id, payment.StatusCompleted, &eth, &txid, &IsStuck)
+		w.S.Status(id, constants.StatusCompleted, &eth, &txid, &IsStuck)
 	}
+}
+
+func (w *ETH) IsTransactionMatch(client *ethclient.Client, tx *constants.CheckTxRequest) (*types.Transaction, string, bool) {
+	Tx, _, err := client.TransactionByHash(context.Background(), common.HexToHash(tx.TxID))
+	if err != nil {
+		logger.Log.Debugf("ETH: %s", err)
+	}
+
+	wei := Tx.Value()
+	eth := new(big.Float).Quo(new(big.Float).SetInt(wei), big.NewFloat(1e18)).Text('f', 18)
+	logger.Log.Infof("ETH: Incoming transaction %s, Amount: %s", Tx.Hash().Hex(), eth)
+
+	return Tx, eth, true
 }

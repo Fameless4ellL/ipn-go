@@ -1,7 +1,7 @@
 package rpc
 
 import (
-	"go-blocker/internal/config"
+	"log"
 	"sync"
 	"time"
 
@@ -44,7 +44,7 @@ func (m *Manager) GetClientForChain(chain ChainType) (*ethclient.Client, string,
 		if err == nil {
 			return client, node.URL, nil
 		}
-		config.Log.Infof("RPC node failed will try to change another: %s (%v)", node.URL, err)
+		log.Printf("RPC node failed will try to change another: %s (%v)", node.URL, err)
 		m.nodes[m.index].Healthy = false
 		m.nodes[m.index].LastFailure = time.Now()
 	}
@@ -66,12 +66,12 @@ func (m *Manager) StartHealthMonitor(interval time.Duration) {
 
 				client, err := ethclient.Dial(node.URL)
 				if err == nil {
-					config.Log.Infof("RPC node recovered: %s", node.URL)
+					log.Printf("RPC node recovered: %s", node.URL)
 					m.nodes[i].Healthy = true
 					m.nodes[i].LastFailure = time.Time{}
 					client.Close()
 				} else {
-					config.Log.Infof("RPC node still unhealthy: %s", node.URL)
+					log.Printf("RPC node still unhealthy: %s", node.URL)
 				}
 			}
 			m.mu.Unlock()
