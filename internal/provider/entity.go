@@ -7,8 +7,9 @@ import (
 )
 
 type CurrencyWatcher interface {
-	Name() string
+	Name() constants.CurrencyType
 	Chain() string
 	Decimals() int
-	IsTransactionMatch(client *ethclient.Client, tx *constants.CheckTxRequest) (string, bool)
+	IsTransactionMatch(client *ethclient.Client, url string, tx *constants.CheckTxRequest) (string, bool)
+	GetLatestTx(client *ethclient.Client, url string, req constants.FindTxRequest) (string, bool)
 }

@@ -51,11 +51,24 @@ type WebhookResponse struct {
 	Status PaymentStatus `json:"status"`
 }
 
+type CurrencyType string
+
+const (
+	ETH  CurrencyType = "ETH"
+	USDT CurrencyType = "USDT"
+	USDC CurrencyType = "USDC"
+)
+
 // CheckTxRequest represents the request to check a transaction
 type CheckTxRequest struct {
-	Address  string `json:"address"`
-	Currency string `json:"currency"`
-	TxID     string `json:"txid"`
+	Address  string       `json:"address" example:"0xabc123..."`
+	Currency CurrencyType `json:"currency" example:"USDT" description:"Token symbol (e.g., ETH, USDC, USDT)"`
+	TxID     string       `json:"txid" example:"0xabc123..." description:"The transaction ID to check"`
+}
+
+type FindTxRequest struct {
+	Address  string       `json:"address" example:"0xabc123..." format:"hex"`
+	Currency CurrencyType `json:"currency" example:"USDT" description:"Token symbol (e.g., ETH, USDC, USDT)"`
 }
 
 // CheckTxResponse represents the response from checking a transaction

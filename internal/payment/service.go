@@ -56,7 +56,7 @@ func (s *PaymentService) ListPendingPayments() ([]constants.Payment, error) {
 
 func (s *PaymentService) CheckTx(req *constants.CheckTxRequest) (*constants.CheckTxResponse, error) {
 	manager := rpc.NewManager(config.Nodes)
-	client, _, err := manager.GetClientForChain(rpc.Ethereum)
+	client, url, err := manager.GetClientForChain(rpc.Ethereum)
 	if err != nil {
 		return nil, err
 	}
@@ -65,27 +65,84 @@ func (s *PaymentService) CheckTx(req *constants.CheckTxRequest) (*constants.Chec
 		rpc.Ethereum: {
 			&provider.ETH{},
 			&provider.USDT{},
+			&provider.USDC{},
 		},
 	}[rpc.Ethereum]
 
 	for _, watcher := range group {
-		amount, IsStuck := watcher.IsTransactionMatch(client, req)
+		if watcher.Name() != req.Currency {
+			continue
+		}
+
+		amount, IsStuck := watcher.IsTransactionMatch(client, url, req)
 		if IsStuck {
 			SendCallback(&constants.Payment{
 				ID:             uuid.Nil,
 				Address:        req.Address,
-				Currency:       req.Currency,
+				Currency:       string(watcher.Name()),
 				Amount:         amount,
 				Timeout:        0,
 				CallbackURL:    "",
-				Status:         constants.StatusPending,
+				Status:         constants.StatusCompleted,
 				CreatedAt:      time.Time{},
 				ExpiresAt:      time.Time{},
 				ReceivedAmount: amount,
 				TxID:           req.TxID,
-				IsStuck:        false,
+				IsStuck:        true,
 			})
-		} else {
+			return &constants.CheckTxResponse{
+				Status: constants.StatusReceived,
+				Amount: amount,
+			}, nil
+		} else if amount != "" {
+			return &constants.CheckTxResponse{
+				Status: constants.StatusCompleted,
+				Amount: amount,
+			}, nil
+		}
+	}
+	return nil, errors.New("no matching transaction found")
+}
+
+func (s *PaymentService) FindLatestTx(req *constants.FindTxRequest) (*constants.CheckTxResponse, error) {
+	manager := rpc.NewManager(config.Nodes)
+	client, url, err := manager.GetClientForChain(rpc.Ethereum)
+	if err != nil {
+		return nil, err
+	}
+	group := map[rpc.ChainType][]provider.CurrencyWatcher{
+		rpc.Ethereum: {
+			&provider.ETH{},
+			&provider.USDT{},
+			&provider.USDC{},
+		},
+	}[rpc.Ethereum]
+	for _, watcher := range group {
+		if watcher.Name() != req.Currency {
+			continue
+		}
+
+		amount, IsStuck := watcher.GetLatestTx(client, url, *req)
+		if IsStuck {
+			SendCallback(&constants.Payment{
+				ID:             uuid.Nil,
+				Address:        req.Address,
+				Currency:       string(watcher.Name()),
+				Amount:         amount,
+				Timeout:        0,
+				CallbackURL:    "",
+				Status:         constants.StatusCompleted,
+				CreatedAt:      time.Time{},
+				ExpiresAt:      time.Time{},
+				ReceivedAmount: amount,
+				TxID:           "",
+				IsStuck:        true,
+			})
+			return &constants.CheckTxResponse{
+				Status: constants.StatusReceived,
+				Amount: amount,
+			}, nil
+		} else if amount != "" {
 			return &constants.CheckTxResponse{
 				Status: constants.StatusCompleted,
 				Amount: amount,

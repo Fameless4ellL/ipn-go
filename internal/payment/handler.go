@@ -71,8 +71,16 @@ func (h *Handler) Status(c *gin.Context) {
 	})
 }
 
+// @Summary      Check a transaction
+// @Description  Check if a transaction meets the payment requirements
+// @Tags         payment
+// @Accept       json
+// @Param request body constants.CheckTxRequest true "Check transaction request"
+// @Produce      json
+// @Success      200  {object}  constants.CheckTxResponse
+// @Router       /check/transaction [post]
 func (h *Handler) CheckTx(c *gin.Context) {
-	var req constants.CheckTxRequest
+	var req *constants.CheckTxRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
@@ -83,10 +91,37 @@ func (h *Handler) CheckTx(c *gin.Context) {
 		return
 	}
 
-	// service here
+	resp, err := h.Service.CheckTx(req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check transaction"})
+		return
+	}
+	c.JSON(http.StatusOK, resp)
+}
 
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create payment"})
-	// 	return
-	// }
+// @Summary      Find the latest transaction
+// @Description  Find the latest transaction for a given address
+// @Tags         payment
+// @Accept       json
+// @Param request body constants.FindTxRequest true "Check transaction request"
+// @Produce      json
+// @Success      200  {object}  constants.CheckTxResponse
+// @Router       /find/transaction [post]
+func (h *Handler) FindLatestTx(c *gin.Context) {
+	var req *constants.FindTxRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		return
+	}
+
+	if !common.IsHexAddress(req.Address) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid address"})
+		return
+	}
+	resp, err := h.Service.FindLatestTx(req)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "failed to find latest transaction"})
+		return
+	}
+	c.JSON(http.StatusOK, resp)
 }

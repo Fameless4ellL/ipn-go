@@ -13,10 +13,6 @@ import (
 )
 
 func SendCallback(p *constants.Payment) {
-	if p.CallbackURL == "" {
-		return
-	}
-
 	payload := map[string]interface{}{
 		"payment_id":      p.ID,
 		"status":          p.Status,

@@ -1,0 +1,106 @@
+definitions:
+  constants.CheckTxRequest:
+    properties:
+      address:
+        example: 0xabc123...
+        type: string
+      currency:
+        allOf:
+        - $ref: '#/definitions/constants.CurrencyType'
+        example: USDT
+      txid:
+        example: 0xabc123...
+        type: string
+    type: object
+  constants.CheckTxResponse:
+    properties:
+      amount:
+        type: string
+      status:
+        $ref: '#/definitions/constants.PaymentStatus'
+    type: object
+  constants.CurrencyType:
+    enum:
+    - ETH
+    - USDT
+    - USDC
+    type: string
+    x-enum-varnames:
+    - ETH
+    - USDT
+    - USDC
+  constants.FindTxRequest:
+    properties:
+      address:
+        example: 0xabc123...
+        format: hex
+        type: string
+      currency:
+        allOf:
+        - $ref: '#/definitions/constants.CurrencyType'
+        example: USDT
+    type: object
+  constants.PaymentStatus:
+    enum:
+    - pending
+    - received
+    - completed
+    - timeout
+    - failed
+    - mismatch
+    type: string
+    x-enum-varnames:
+    - StatusPending
+    - StatusReceived
+    - StatusCompleted
+    - StatusTimeout
+    - StatusFailed
+    - StatusMismatch
+info:
+  contact: {}
+paths:
+  /check/transaction:
+    post:
+      consumes:
+      - application/json
+      description: Check if a transaction meets the payment requirements
+      parameters:
+      - description: Check transaction request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/constants.CheckTxRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/constants.CheckTxResponse'
+      summary: Check a transaction
+      tags:
+      - payment
+  /find/transaction:
+    post:
+      consumes:
+      - application/json
+      description: Find the latest transaction for a given address
+      parameters:
+      - description: Check transaction request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/constants.FindTxRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/constants.CheckTxResponse'
+      summary: Find the latest transaction
+      tags:
+      - payment
+swagger: "2.0"

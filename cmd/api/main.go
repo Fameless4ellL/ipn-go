@@ -42,6 +42,7 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 
 func main() {
 	config.Init()
+	logger.Init()
 	server := server.NewServer()
 
 	// Create a done channel to signal when the shutdown is complete
