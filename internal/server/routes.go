@@ -3,14 +3,10 @@ package server
 import (
 	"net/http"
 
-	docs "go-blocker/cmd/docs"
-
-	"github.com/gin-gonic/gin"
-	swaggerfiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
-
 	"go-blocker/internal/database"
 	"go-blocker/internal/payment"
+
+	"github.com/gin-gonic/gin"
 
 	"github.com/gin-contrib/cors"
 )
@@ -40,9 +36,6 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// pay.GET("/status/:id", paymentHandler.Status)
 	pay.POST("/check/transaction", paymentHandler.CheckTx)
 	pay.POST("/find/transaction", paymentHandler.FindLatestTx)
-
-	docs.SwaggerInfo.BasePath = "/api/v1"
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	return r
 }

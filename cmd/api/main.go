@@ -8,13 +8,9 @@ import (
 	"time"
 
 	"go-blocker/internal/config"
-	"go-blocker/internal/database"
 	logger "go-blocker/internal/log"
-	"go-blocker/internal/payment"
 	"go-blocker/internal/server"
-	"go-blocker/internal/storage"
-	blocker "go-blocker/internal/worker/blocker"
-	worker "go-blocker/internal/worker/payment"
+	"go-blocker/internal/telegram"
 )
 
 func gracefulShutdown(apiServer *http.Server, done chan bool) {
@@ -51,13 +47,16 @@ func main() {
 	// Run graceful shutdown in a separate goroutine
 	go gracefulShutdown(server, done)
 
-	db := database.New()
-	repo := database.NewPaymentRepository(db)
-	service := payment.NewPaymentService(repo)
+	telegram.Init()
 
-	storage.InitStores() // Initialize the global stores, including payment
-	blocker.Start(service)
-	worker.Start(service)
+	// old algorithm
+	// db := database.New()
+	// repo := database.NewPaymentRepository(db)
+	// service := payment.NewPaymentService(repo)
+
+	// storage.InitStores() // Initialize the global stores, including payment
+	// blocker.Start(service)
+	// worker.Start(service)
 
 	err := server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
