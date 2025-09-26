@@ -10,7 +10,6 @@ import (
 	"go-blocker/internal/config"
 	logger "go-blocker/internal/log"
 	"go-blocker/internal/server"
-	"go-blocker/internal/telegram"
 )
 
 func gracefulShutdown(apiServer *http.Server, done chan bool) {
@@ -47,7 +46,7 @@ func main() {
 	// Run graceful shutdown in a separate goroutine
 	go gracefulShutdown(server, done)
 
-	telegram.Init()
+	// telegram.Init()
 
 	// old algorithm
 	// db := database.New()
