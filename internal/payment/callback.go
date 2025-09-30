@@ -47,8 +47,7 @@ func Telegram(payload map[string]interface{}) {
 
 	// Format message
 	message := fmt.Sprintf(
-		"💸 Payment Status\nID: %v\nStatus: %v\nAddress: %v\nAmount: %v\nCurrency: %v\nTxID: %v\nStuck: %v\n",
-		payload["payment_id"],
+		"💸 Payment Status\nStatus: %v\nAddress: %v\nAmount: %v\nCurrency: %v\nTxID: %v\nStuck: %v\n",
 		payload["status"],
 		payload["address"],
 		payload["received_amount"],

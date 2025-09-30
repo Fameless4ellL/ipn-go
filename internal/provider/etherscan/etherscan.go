@@ -12,7 +12,6 @@ func (c *Client) GetTransactions(address string, startBlock, endBlock int, page 
 	if err != nil {
 		return nil, err
 	}
-
 	var txResp TxListResponse
 	if err := json.Unmarshal(body, &txResp); err != nil {
 		return nil, fmt.Errorf("unmarshalling failed: %w", err)

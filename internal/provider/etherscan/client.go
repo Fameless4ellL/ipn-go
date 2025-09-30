@@ -15,7 +15,7 @@ type Client struct {
 func NewClient() *Client {
 	return &Client{
 		APIKey:  config.ETHapiKey,
-		BaseURL: "https://api.etherscan.io/api",
+		BaseURL: "https://api.etherscan.io/v2/api",
 	}
 }
 
