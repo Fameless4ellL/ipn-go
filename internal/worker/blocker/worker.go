@@ -1,8 +1,8 @@
 package blocker
 
 import (
-	"go-blocker/internal/config"
-	"go-blocker/internal/payment"
+	"go-blocker/internal/application/payment"
+	"go-blocker/internal/pkg/config"
 	"go-blocker/internal/rpc"
 	"go-blocker/internal/storage"
 	"go-blocker/internal/watcher"
@@ -10,7 +10,7 @@ import (
 )
 
 func Start(
-	service *payment.PaymentService,
+	service *payment.Service,
 ) {
 	grouped := map[rpc.ChainType][]watcher.CurrencyWatcher{
 		rpc.Ethereum: {

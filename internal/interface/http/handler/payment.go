@@ -1,7 +1,7 @@
 package payment
 
 import (
-	constants "go-blocker/internal/const"
+	"go-blocker/internal/application/payment"
 	"go-blocker/internal/storage"
 	"net/http"
 
@@ -13,11 +13,15 @@ import (
 )
 
 type Handler struct {
-	Service *PaymentService
+	Service *payment.Service
+}
+
+func NewRepository(s *payment.Service) *Handler {
+	return &Handler{Service: s}
 }
 
 func (h *Handler) Webhook(c *gin.Context) {
-	var req constants.WebhookRequest
+	var req payment.WebhookRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
@@ -36,7 +40,7 @@ func (h *Handler) Webhook(c *gin.Context) {
 	}
 
 	storage.PaymentAddressStore.Set(req.Address, obj.ID)
-	resp := constants.WebhookResponse{ID: obj.ID.String(), Status: obj.Status}
+	resp := payment.WebhookResponse{ID: obj.ID.String(), Status: obj.Status}
 	c.JSON(http.StatusOK, resp)
 }
 
@@ -53,7 +57,7 @@ func (h *Handler) Status(c *gin.Context) {
 		return
 	}
 
-	payment, err := h.Service.repo.FindByID(paymentID)
+	payment, err := h.Service.Repo.FindByID(paymentID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "payment not found"})
 		return
@@ -82,7 +86,7 @@ func (h *Handler) Status(c *gin.Context) {
 // @Success      200  {object}  constants.CheckTxResponse
 // @Router       /payment/check/transaction [post]
 func (h *Handler) CheckTx(c *gin.Context) {
-	var req *constants.CheckTxRequest
+	var req *payment.CheckTxRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
@@ -110,7 +114,7 @@ func (h *Handler) CheckTx(c *gin.Context) {
 // @Success      200  {object}  constants.CheckTxResponse
 // @Router       /payment/find/transaction [post]
 func (h *Handler) FindLatestTx(c *gin.Context) {
-	var req *constants.FindTxRequest
+	var req *payment.FindTxRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
@@ -126,4 +130,11 @@ func (h *Handler) FindLatestTx(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, resp)
+}
+
+func (h *Handler) HealthHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"status": "OK",
+		"db":     "connected",
+	})
 }

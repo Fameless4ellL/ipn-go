@@ -3,8 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
-	constants "go-blocker/internal/const"
-	logger "go-blocker/internal/log"
+	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/provider/etherscan"
 	"go-blocker/internal/storage"
 	"log"
@@ -20,8 +19,8 @@ import (
 
 type USDT struct{}
 
-func (w *USDT) Name() constants.CurrencyType {
-	return constants.USDT
+func (w *USDT) Name() string {
+	return "USDT"
 }
 
 func (w *USDT) Chain() string {
@@ -82,27 +81,23 @@ func (w *USDT) Checklogs(tx *types.Receipt, address string) (string, bool) {
 	return "", false
 }
 
-func (w *USDT) IsTransactionMatch(client *ethclient.Client, url string, tx *constants.CheckTxRequest) (string, bool) {
-	Tx, err := client.TransactionReceipt(context.Background(), common.HexToHash(tx.TxID))
+func (w *USDT) IsTransactionMatch(client *ethclient.Client, url string, address string, txid string) (string, bool) {
+	Tx, err := client.TransactionReceipt(context.Background(), common.HexToHash(txid))
 	if err != nil {
 		logger.Log.Debugf("ETH: %s", err)
 	}
 
-	usdt, isStuck := w.Checklogs(Tx, tx.Address)
+	usdt, isStuck := w.Checklogs(Tx, address)
 	return usdt, isStuck
 }
 
-func (w *USDT) GetLatestTx(client *ethclient.Client, url string, req constants.FindTxRequest) (string, bool) {
+func (w *USDT) GetLatestTx(client *ethclient.Client, url string, address string) (string, bool) {
 	ScanClient := etherscan.NewClient()
-	resp, err := ScanClient.GetERC20(w.Address().Hex(), req.Address, 0, 99999999, 1, 10, "desc")
+	resp, err := ScanClient.GetERC20(w.Address().Hex(), address, 0, 99999999, 1, 10, "desc")
 	if err != nil {
 		logger.Log.Warnf("Error: %v", err)
 		return "", false
 	}
 
-	return w.IsTransactionMatch(client, url, &constants.CheckTxRequest{
-		Address:  req.Address,
-		Currency: w.Name(),
-		TxID:     resp.Result[0].Hash,
-	})
+	return w.IsTransactionMatch(client, url, address, resp.Result[0].Hash)
 }

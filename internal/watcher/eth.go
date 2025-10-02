@@ -3,9 +3,9 @@ package watcher
 import (
 	"context"
 	"fmt"
-	constants "go-blocker/internal/const"
-	logger "go-blocker/internal/log"
-	"go-blocker/internal/payment"
+	app "go-blocker/internal/application/payment"
+	"go-blocker/internal/infrastructure/payment"
+	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/rpc"
 	"go-blocker/internal/storage"
 	"go-blocker/internal/utils"
@@ -18,7 +18,7 @@ import (
 )
 
 type ETH struct {
-	S *payment.PaymentService
+	S *app.Service
 }
 
 func (w *ETH) Name() string {
@@ -49,7 +49,7 @@ func (w *ETH) GetPendingBalance(client *ethclient.Client, wallet common.Address)
 		if err != nil {
 			return *ethBalance
 		}
-		w.S.Status(id, constants.StatusReceived, nil, nil, nil)
+		w.S.Status(id, payment.Received, nil, nil, nil)
 		storage.PaymentAddressStore.SetPending(wallet.Hex(), true)
 	}
 	return *ethBalance
@@ -82,11 +82,11 @@ func (w *ETH) CheckTransactions(m *rpc.Manager, client *ethclient.Client, block 
 
 		var Tx *types.Transaction
 		var eth, txid string
-		Tx, eth, isSent = w.IsTransactionMatch(client, &constants.CheckTxRequest{TxID: tx.Hash().Hex()})
+		Tx, eth, isSent = w.IsTransactionMatch(client, &app.CheckTxRequest{TxID: tx.Hash().Hex()})
 		txid = Tx.Hash().Hex()
 
 		logger.Log.Infof("ETH: Incoming transaction %s, Amount: %s", tx.Hash().Hex(), eth)
-		w.S.Status(id, constants.StatusCompleted, &eth, &txid, nil)
+		w.S.Status(id, payment.Completed, &eth, &txid, nil)
 	}
 
 	if !isSent {
@@ -131,11 +131,11 @@ func (w *ETH) CheckInternalTxs(m *rpc.Manager, client *ethclient.Client, block *
 		logger.Log.Infof("ETH: Incoming transaction %s, Amount: %s", txid, eth)
 
 		IsStuck := true
-		w.S.Status(id, constants.StatusCompleted, &eth, &txid, &IsStuck)
+		w.S.Status(id, payment.Completed, &eth, &txid, &IsStuck)
 	}
 }
 
-func (w *ETH) IsTransactionMatch(client *ethclient.Client, tx *constants.CheckTxRequest) (*types.Transaction, string, bool) {
+func (w *ETH) IsTransactionMatch(client *ethclient.Client, tx *app.CheckTxRequest) (*types.Transaction, string, bool) {
 	Tx, _, err := client.TransactionByHash(context.Background(), common.HexToHash(tx.TxID))
 	if err != nil {
 		logger.Log.Debugf("ETH: %s", err)

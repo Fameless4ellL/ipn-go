@@ -1,7 +1,7 @@
 package telegram
 
 import (
-	"go-blocker/internal/config"
+	"go-blocker/internal/pkg/config"
 	"go-blocker/internal/telegram/handlers"
 	"log"
 	"time"

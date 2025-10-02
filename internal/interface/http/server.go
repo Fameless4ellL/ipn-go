@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
 	"gorm.io/gorm"
 
-	"go-blocker/internal/config"
-	"go-blocker/internal/database"
+	database "go-blocker/internal/interface/db"
+	"go-blocker/internal/pkg/config"
 )
 
 type Server struct {
@@ -17,7 +18,7 @@ type Server struct {
 	db   *gorm.DB
 }
 
-func NewServer() *http.Server {
+func NewServer(h *gin.Engine) *http.Server {
 	NewServer := &Server{
 		port: config.Port,
 		db:   database.New(),
@@ -26,7 +27,7 @@ func NewServer() *http.Server {
 	// Declare Server config
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", NewServer.port),
-		Handler:      NewServer.RegisterRoutes(),
+		Handler:      h,
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,

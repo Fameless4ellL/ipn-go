@@ -2,7 +2,7 @@ package etherscan
 
 import (
 	"fmt"
-	"go-blocker/internal/config"
+	"go-blocker/internal/pkg/config"
 	"io"
 	"net/http"
 )

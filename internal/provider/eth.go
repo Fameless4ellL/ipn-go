@@ -2,8 +2,7 @@ package provider
 
 import (
 	"context"
-	constants "go-blocker/internal/const"
-	logger "go-blocker/internal/log"
+	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/provider/etherscan"
 	"go-blocker/internal/utils"
 	"math/big"
@@ -16,8 +15,8 @@ import (
 
 type ETH struct{}
 
-func (w *ETH) Name() constants.CurrencyType {
-	return constants.ETH
+func (w *ETH) Name() string {
+	return "ETH"
 }
 
 func (w *ETH) Chain() string {
@@ -58,18 +57,18 @@ func (w *ETH) CheckInternalTxs(url string, Tx *types.Receipt, address string) (s
 	return "", false
 }
 
-func (w *ETH) IsTransactionMatch(client *ethclient.Client, url string, tx *constants.CheckTxRequest) (string, bool) {
-	Tx, _, err := client.TransactionByHash(context.Background(), common.HexToHash(tx.TxID))
+func (w *ETH) IsTransactionMatch(client *ethclient.Client, url string, address string, txid string) (string, bool) {
+	Tx, _, err := client.TransactionByHash(context.Background(), common.HexToHash(txid))
 	if err != nil {
 		return "", false
 	}
 
-	if *Tx.To() != common.HexToAddress(tx.Address) {
-		Tx, err := client.TransactionReceipt(context.Background(), common.HexToHash(tx.TxID))
+	if *Tx.To() != common.HexToAddress(address) {
+		Tx, err := client.TransactionReceipt(context.Background(), common.HexToHash(txid))
 		if err != nil {
 			return "", false
 		}
-		return w.CheckInternalTxs(url, Tx, tx.Address)
+		return w.CheckInternalTxs(url, Tx, address)
 	}
 
 	wei := Tx.Value()
@@ -80,17 +79,13 @@ func (w *ETH) IsTransactionMatch(client *ethclient.Client, url string, tx *const
 	return eth, true
 }
 
-func (w *ETH) GetLatestTx(client *ethclient.Client, url string, req constants.FindTxRequest) (string, bool) {
+func (w *ETH) GetLatestTx(client *ethclient.Client, url string, address string) (string, bool) {
 	ScanClient := etherscan.NewClient()
-	resp, err := ScanClient.GetTransactions(req.Address, 0, 99999999, 1, 10, "asc")
+	resp, err := ScanClient.GetTransactions(address, 0, 99999999, 1, 10, "asc")
 	if err != nil {
 		logger.Log.Warnf("Error: %v", err)
 		return "", false
 	}
 
-	return w.IsTransactionMatch(client, url, &constants.CheckTxRequest{
-		Address:  req.Address,
-		Currency: w.Name(),
-		TxID:     resp.Result[0].Hash,
-	})
+	return w.IsTransactionMatch(client, url, address, resp.Result[0].Hash)
 }

@@ -3,9 +3,9 @@ package watcher
 import (
 	"context"
 	"fmt"
-	constants "go-blocker/internal/const"
-	logger "go-blocker/internal/log"
-	"go-blocker/internal/payment"
+	app "go-blocker/internal/application/payment"
+	"go-blocker/internal/infrastructure/payment"
+	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/rpc"
 	"go-blocker/internal/storage"
 	"log"
@@ -21,7 +21,7 @@ import (
 )
 
 type USDT struct {
-	S *payment.PaymentService
+	S *app.Service
 }
 
 func (w *USDT) Name() string {
@@ -89,7 +89,7 @@ func (w *USDT) Checklogs(client *ethclient.Client, tx *types.Receipt) {
 				txId := log.TxHash.Hex()
 				isContractMatch := tx.ContractAddress != w.Address()
 
-				w.S.Status(id, constants.StatusCompleted, &usdt, &txId, &isContractMatch)
+				w.S.Status(id, payment.Completed, &usdt, &txId, &isContractMatch)
 			}
 		}
 	}
@@ -127,14 +127,14 @@ func (w *USDT) GetPendingBalance(client *ethclient.Client, wallet common.Address
 		if err != nil {
 			return *usdtBalance
 		}
-		w.S.Status(id, constants.StatusReceived, nil, nil, nil)
+		w.S.Status(id, payment.Received, nil, nil, nil)
 		storage.PaymentAddressStore.SetPending(wallet.Hex(), true)
 	}
 
 	return *usdtBalance
 }
 
-func (w *USDT) IsTransactionMatch(client *ethclient.Client, tx *constants.CheckTxRequest) (*types.Transaction, string, bool) {
+func (w *USDT) IsTransactionMatch(client *ethclient.Client, tx *app.CheckTxRequest) (*types.Transaction, string, bool) {
 	Tx, _, err := client.TransactionByHash(context.Background(), common.HexToHash(tx.TxID))
 	if err != nil {
 		logger.Log.Debugf("ETH: %s", err)

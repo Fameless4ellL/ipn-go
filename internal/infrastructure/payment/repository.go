@@ -1,10 +1,9 @@
-package database
+package payment
 
 import (
-	"go-blocker/internal/config"
-	constants "go-blocker/internal/const"
-	logger "go-blocker/internal/log"
-	"go-blocker/internal/payment"
+	"go-blocker/internal/infrastructure/notifier"
+	"go-blocker/internal/pkg/config"
+	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/storage"
 	"math/big"
 
@@ -12,29 +11,29 @@ import (
 	"gorm.io/gorm"
 )
 
-type PaymentRepository struct {
+type Repository struct {
 	db *gorm.DB
 }
 
-func NewPaymentRepository(db *gorm.DB) *PaymentRepository {
-	return &PaymentRepository{db: db}
+func NewRepository(db *gorm.DB) *Repository {
+	return &Repository{db: db}
 }
 
-func (r *PaymentRepository) Save(p *constants.Payment) error {
+func (r *Repository) Save(p *Payment) error {
 	return r.db.Create(&p).Error
 }
 
-func (r *PaymentRepository) FindByID(id uuid.UUID) (*constants.Payment, error) {
-	var model constants.Payment
+func (r *Repository) FindByID(id uuid.UUID) (*Payment, error) {
+	var model Payment
 	if err := r.db.First(&model, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &model, nil
 }
 
-func (r *PaymentRepository) UpdateStatus(
+func (r *Repository) UpdateStatus(
 	id uuid.UUID,
-	status constants.PaymentStatus,
+	status Status,
 	receivedAmount *string,
 	txID *string,
 	isContractMatch *bool,
@@ -63,38 +62,38 @@ func (r *PaymentRepository) UpdateStatus(
 	}
 
 	// check isBalanceSufficient
-	if status == constants.StatusCompleted && receivedAmount != nil {
+	if status == Completed && receivedAmount != nil {
 		balance, _, err := big.ParseFloat(*receivedAmount, 10, 64, big.ToNearestEven)
 		if err != nil {
 			return err
 		}
 		if !r.isBalanceSufficient(balance, p.Amount) {
 			logger.Log.Debugf("Payment %s: balance %s is less than expected %s", id, *receivedAmount, p.Amount)
-			updates["status"] = string(constants.StatusMismatch)
-			p.Status = constants.StatusMismatch
+			updates["status"] = string(Mismatch)
+			p.Status = Mismatch
 		}
 	}
 
-	if status != constants.StatusPending && status != constants.StatusReceived {
+	if status != Pending && status != Received {
 		storage.PaymentAddressStore.Delete(p.Address)
 	}
 
-	payment.SendCallback(p)
+	notifier.Send(p.MakePayload(), p.CallbackURL)
 
-	return r.db.Model(&constants.Payment{}).
+	return r.db.Model(&Payment{}).
 		Where("id = ?", id).
 		Updates(updates).Error
 }
 
-func (r *PaymentRepository) ExpireWhere(condition func(*constants.Payment) bool) error {
-	var payments []constants.Payment
+func (r *Repository) ExpireWhere(condition func(*Payment) bool) error {
+	var payments []Payment
 	if err := r.db.Find(&payments).Error; err != nil {
 		return err
 	}
 
 	for _, p := range payments {
 		if condition(&p) {
-			if err := r.UpdateStatus(p.ID, constants.StatusTimeout, nil, nil, nil); err != nil {
+			if err := r.UpdateStatus(p.ID, Timeout, nil, nil, nil); err != nil {
 				return err
 			}
 		}
@@ -102,13 +101,13 @@ func (r *PaymentRepository) ExpireWhere(condition func(*constants.Payment) bool)
 	return nil
 }
 
-func (r *PaymentRepository) ListPending() ([]constants.Payment, error) {
-	var payments []constants.Payment
+func (r *Repository) ListPending() ([]Payment, error) {
+	var payments []Payment
 	err := r.db.Where("status = ?", "pending").Find(&payments).Error
 	return payments, err
 }
 
-func (s *PaymentRepository) isBalanceSufficient(balance *big.Float, expected string) bool {
+func (s *Repository) isBalanceSufficient(balance *big.Float, expected string) bool {
 	expectedBig, err := new(big.Float).SetString(expected)
 	if !err {
 		logger.Log.Errorf("Invalid expected amount format: %s", expected)

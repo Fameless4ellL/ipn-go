@@ -2,7 +2,7 @@ package utils
 
 import (
 	"encoding/json"
-	logger "go-blocker/internal/log"
+	logger "go-blocker/internal/pkg/log"
 	"io"
 )
 

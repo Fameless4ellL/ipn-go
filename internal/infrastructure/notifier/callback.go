@@ -1,4 +1,4 @@
-package payment
+package notifier
 
 import (
 	"bytes"
@@ -6,26 +6,15 @@ import (
 	"fmt"
 	"net/http"
 
-	"go-blocker/internal/config"
-	constants "go-blocker/internal/const"
-	logger "go-blocker/internal/log"
+	"go-blocker/internal/pkg/config"
+	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/utils"
 )
 
-func SendCallback(p *constants.Payment) {
-	payload := map[string]interface{}{
-		// "payment_id":      p.ID,
-		"status":          p.Status,
-		"address":         p.Address,
-		"stuck":           p.IsStuck,
-		"received_amount": fmt.Sprintf("%v", p.ReceivedAmount),
-		"txid":            fmt.Sprintf("%v", p.TxID),
-		"currency":        p.Currency,
-	}
-
+func Send(payload map[string]interface{}, url string) {
 	// make a semaphore to limit concurrent callbacks
-	if p.CallbackURL != "" {
-		go SendRequest(p.CallbackURL, payload)
+	if url != "" {
+		go SendRequest(url, payload)
 	}
 	go Telegram(payload)
 }

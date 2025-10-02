@@ -3,8 +3,8 @@ package blocker
 import (
 	"context"
 	"fmt"
-	logger "go-blocker/internal/log"
-	"go-blocker/internal/payment"
+	"go-blocker/internal/application/payment"
+	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/rpc"
 	"go-blocker/internal/storage"
 	"go-blocker/internal/watcher"
@@ -22,7 +22,7 @@ var (
 )
 
 func IncomingTx(
-	s *payment.PaymentService,
+	s *payment.Service,
 	manager *rpc.Manager,
 	watchersmaped map[rpc.ChainType][]watcher.CurrencyWatcher,
 	tracker storage.BlockTracker,
@@ -80,7 +80,7 @@ func IncomingTx(
 }
 
 func Blocker(
-	s *payment.PaymentService,
+	s *payment.Service,
 	m *rpc.Manager,
 	watchers []watcher.CurrencyWatcher,
 	client *ethclient.Client,

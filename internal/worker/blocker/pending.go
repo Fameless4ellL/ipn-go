@@ -1,8 +1,8 @@
 package blocker
 
 import (
-	logger "go-blocker/internal/log"
-	"go-blocker/internal/payment"
+	"go-blocker/internal/application/payment"
+	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/rpc"
 	"go-blocker/internal/storage"
 	"go-blocker/internal/watcher"
@@ -19,7 +19,7 @@ var (
 )
 
 func Pending(
-	s *payment.PaymentService,
+	s *payment.Service,
 	manager *rpc.Manager,
 	watchersmaped map[rpc.ChainType][]watcher.CurrencyWatcher,
 ) {

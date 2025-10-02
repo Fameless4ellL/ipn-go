@@ -1,12 +1,12 @@
 package payment_worker
 
 import (
-	logger "go-blocker/internal/log"
-	"go-blocker/internal/payment"
+	"go-blocker/internal/application/payment"
+	logger "go-blocker/internal/pkg/log"
 	"time"
 )
 
-func Start(service *payment.PaymentService) {
+func Start(service *payment.Service) {
 	go func() {
 		ticker := time.NewTicker(1 * time.Minute)
 		defer ticker.Stop()

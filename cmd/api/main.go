@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
-
-	"go-blocker/internal/config"
-	logger "go-blocker/internal/log"
-	"go-blocker/internal/server"
-
 	"net/http"
+
+	"go-blocker/internal/application/payment"
+	repository "go-blocker/internal/infrastructure/payment"
+	database "go-blocker/internal/interface/db"
+	server "go-blocker/internal/interface/http"
+	handler "go-blocker/internal/interface/http/handler"
+	"go-blocker/internal/pkg/config"
+	logger "go-blocker/internal/pkg/log"
 	"os/signal"
 	"syscall"
 	"time"
@@ -39,26 +42,29 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 func main() {
 	config.Init()
 	logger.Init()
-	server := server.NewServer()
 
 	// Create a done channel to signal when the shutdown is complete
 	done := make(chan bool, 1)
 
 	// Run graceful shutdown in a separate goroutine
-	go gracefulShutdown(server, done)
 
 	// telegram.Init()
 
-	// old algorithm
-	// db := database.New()
-	// repo := database.NewPaymentRepository(db)
-	// service := payment.NewPaymentService(repo)
+	db := database.New()
+	repo := repository.NewRepository(db)
+	service := payment.NewService(repo)
+	h := handler.NewRepository(service)
 
+	router := server.RegisterRoutes(h)
+	srv := server.NewServer(router)
+	go gracefulShutdown(srv, done)
+
+	// old algorithm
 	// storage.InitStores() // Initialize the global stores, including payment
 	// blocker.Start(service)
 	// worker.Start(service)
 
-	err := server.ListenAndServe()
+	err := srv.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		logger.Log.Panicf("http server error: %s", err)
 	}

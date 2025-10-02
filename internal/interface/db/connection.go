@@ -1,9 +1,9 @@
 package database
 
 import (
-	"go-blocker/internal/config"
-	constants "go-blocker/internal/const"
-	logger "go-blocker/internal/log"
+	"go-blocker/internal/infrastructure/payment"
+	"go-blocker/internal/pkg/config"
+	logger "go-blocker/internal/pkg/log"
 
 	"github.com/glebarez/sqlite" // Pure Go SQLite driver
 	_ "github.com/joho/godotenv/autoload"
@@ -27,7 +27,7 @@ func New() *gorm.DB {
 	}
 
 	// Auto-migrate the schema
-	err = db.AutoMigrate(&constants.Payment{})
+	err = db.AutoMigrate(&payment.Payment{})
 	if err != nil {
 		logger.Log.Fatal("failed to migrate schema:", err)
 	}

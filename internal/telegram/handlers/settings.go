@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"fmt"
-	"go-blocker/internal/config"
+	"go-blocker/internal/pkg/config"
 
 	tele "gopkg.in/telebot.v4"
 )
