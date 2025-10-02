@@ -3,7 +3,11 @@ package server
 import (
 	payment "go-blocker/internal/interface/http/handler"
 
+	_ "go-blocker/cmd/docs"
+
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"github.com/gin-contrib/cors"
 )
@@ -24,6 +28,7 @@ func RegisterRoutes(h *payment.Handler) *gin.Engine {
 		v1 := api.Group("/v1")
 		{
 			v1.GET("/health", h.HealthHandler)
+			v1.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 			pay := v1.Group("/payment")
 			{
 				// pay.POST("/webhook", h.Webhook)

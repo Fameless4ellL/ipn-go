@@ -85,6 +85,7 @@ func (w *USDT) IsTransactionMatch(client *ethclient.Client, url string, address 
 	Tx, err := client.TransactionReceipt(context.Background(), common.HexToHash(txid))
 	if err != nil {
 		logger.Log.Debugf("ETH: %s", err)
+		return "", false
 	}
 
 	usdt, isStuck := w.Checklogs(Tx, address)

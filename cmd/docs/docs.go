@@ -15,6 +15,29 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/health": {
+            "get": {
+                "description": "Returns service status and database connectivity.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "Service is healthy",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/payment/check/transaction": {
             "post": {
                 "description": "Check if a transaction meets the payment requirements",
@@ -35,7 +58,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/constants.CheckTxRequest"
+                            "$ref": "#/definitions/go-blocker_internal_application_payment.CheckTxRequest"
                         }
                     }
                 ],
@@ -43,7 +66,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/constants.CheckTxResponse"
+                            "$ref": "#/definitions/go-blocker_internal_interface_http_handler.CheckTxResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request format",
+                        "schema": {
+                            "$ref": "#/definitions/payment.InvalidRequest"
+                        }
+                    },
+                    "422": {
+                        "description": "Invalid address format",
+                        "schema": {
+                            "$ref": "#/definitions/payment.InvalidAddress"
+                        }
+                    },
+                    "503": {
+                        "description": "failed to check transaction",
+                        "schema": {
+                            "$ref": "#/definitions/payment.FailedToFind"
                         }
                     }
                 }
@@ -69,7 +110,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/constants.FindTxRequest"
+                            "$ref": "#/definitions/go-blocker_internal_application_payment.FindTxRequest"
                         }
                     }
                 ],
@@ -77,7 +118,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/constants.CheckTxResponse"
+                            "$ref": "#/definitions/go-blocker_internal_interface_http_handler.CheckTxResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request format",
+                        "schema": {
+                            "$ref": "#/definitions/payment.InvalidRequest"
+                        }
+                    },
+                    "422": {
+                        "description": "Invalid address format",
+                        "schema": {
+                            "$ref": "#/definitions/payment.InvalidAddress"
+                        }
+                    },
+                    "503": {
+                        "description": "failed to find latest transaction",
+                        "schema": {
+                            "$ref": "#/definitions/payment.FailedToFind"
                         }
                     }
                 }
@@ -85,7 +144,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "constants.CheckTxRequest": {
+        "go-blocker_internal_application_payment.CheckTxRequest": {
             "type": "object",
             "properties": {
                 "address": {
@@ -95,7 +154,7 @@ const docTemplate = `{
                 "currency": {
                     "allOf": [
                         {
-                            "$ref": "#/definitions/constants.CurrencyType"
+                            "$ref": "#/definitions/go-blocker_internal_application_payment.CurrencyType"
                         }
                     ],
                     "example": "USDT"
@@ -106,18 +165,7 @@ const docTemplate = `{
                 }
             }
         },
-        "constants.CheckTxResponse": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/constants.PaymentStatus"
-                }
-            }
-        },
-        "constants.CurrencyType": {
+        "go-blocker_internal_application_payment.CurrencyType": {
             "type": "string",
             "enum": [
                 "ETH",
@@ -130,7 +178,7 @@ const docTemplate = `{
                 "USDC"
             ]
         },
-        "constants.FindTxRequest": {
+        "go-blocker_internal_application_payment.FindTxRequest": {
             "type": "object",
             "properties": {
                 "address": {
@@ -141,14 +189,25 @@ const docTemplate = `{
                 "currency": {
                     "allOf": [
                         {
-                            "$ref": "#/definitions/constants.CurrencyType"
+                            "$ref": "#/definitions/go-blocker_internal_application_payment.CurrencyType"
                         }
                     ],
                     "example": "USDT"
                 }
             }
         },
-        "constants.PaymentStatus": {
+        "go-blocker_internal_interface_http_handler.CheckTxResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/go-blocker_internal_interface_http_handler.Status"
+                }
+            }
+        },
+        "go-blocker_internal_interface_http_handler.Status": {
             "type": "string",
             "enum": [
                 "pending",
@@ -159,13 +218,40 @@ const docTemplate = `{
                 "mismatch"
             ],
             "x-enum-varnames": [
-                "StatusPending",
-                "StatusReceived",
-                "StatusCompleted",
-                "StatusTimeout",
-                "StatusFailed",
-                "StatusMismatch"
+                "Pending",
+                "Received",
+                "Completed",
+                "Timeout",
+                "Failed",
+                "Mismatch"
             ]
+        },
+        "payment.FailedToFind": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "failed to find latest transaction"
+                }
+            }
+        },
+        "payment.InvalidAddress": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Invalid address format"
+                }
+            }
+        },
+        "payment.InvalidRequest": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "invalid request"
+                }
+            }
         }
     }
 }`
