@@ -11,7 +11,7 @@
         "version": "0.1"
     },
     "paths": {
-        "/check/transaction": {
+        "/payment/check/transaction": {
             "post": {
                 "description": "Check if a transaction meets the payment requirements",
                 "consumes": [
@@ -45,7 +45,7 @@
                 }
             }
         },
-        "/find/transaction": {
+        "/payment/find/transaction": {
             "post": {
                 "description": "Find the latest transaction for a given address",
                 "consumes": [

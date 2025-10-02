@@ -5,6 +5,8 @@ import (
 	"go-blocker/internal/storage"
 	"net/http"
 
+	_ "go-blocker/cmd/docs"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -78,7 +80,7 @@ func (h *Handler) Status(c *gin.Context) {
 // @Param request body constants.CheckTxRequest true "Check transaction request"
 // @Produce      json
 // @Success      200  {object}  constants.CheckTxResponse
-// @Router       /check/transaction [post]
+// @Router       /payment/check/transaction [post]
 func (h *Handler) CheckTx(c *gin.Context) {
 	var req *constants.CheckTxRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -106,7 +108,7 @@ func (h *Handler) CheckTx(c *gin.Context) {
 // @Param request body constants.FindTxRequest true "Check transaction request"
 // @Produce      json
 // @Success      200  {object}  constants.CheckTxResponse
-// @Router       /find/transaction [post]
+// @Router       /payment/find/transaction [post]
 func (h *Handler) FindLatestTx(c *gin.Context) {
 	var req *constants.FindTxRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

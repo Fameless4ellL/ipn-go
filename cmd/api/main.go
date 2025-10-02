@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
-	"net/http"
-	"os/signal"
-	"syscall"
-	"time"
 
 	"go-blocker/internal/config"
 	logger "go-blocker/internal/log"
 	"go-blocker/internal/server"
+
+	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func gracefulShutdown(apiServer *http.Server, done chan bool) {

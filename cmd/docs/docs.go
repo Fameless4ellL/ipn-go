@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/check/transaction": {
+        "/payment/check/transaction": {
             "post": {
                 "description": "Check if a transaction meets the payment requirements",
                 "consumes": [
@@ -49,7 +49,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/find/transaction": {
+        "/payment/find/transaction": {
             "post": {
                 "description": "Find the latest transaction for a given address",
                 "consumes": [
@@ -172,12 +172,12 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
+	Version:          "0.1",
 	Host:             "",
-	BasePath:         "",
+	BasePath:         "/api/v1",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "Go-Blocker API",
+	Description:      "This is the API documentation for the Go-Blocker service.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
