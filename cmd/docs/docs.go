@@ -58,7 +58,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/go-blocker_internal_application_payment.CheckTxRequest"
+                            "$ref": "#/definitions/payment.CheckTxRequest"
                         }
                     }
                 ],
@@ -66,7 +66,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/go-blocker_internal_interface_http_handler.CheckTxResponse"
+                            "$ref": "#/definitions/payment.CheckTxResponse"
                         }
                     },
                     "400": {
@@ -110,7 +110,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/go-blocker_internal_application_payment.FindTxRequest"
+                            "$ref": "#/definitions/payment.FindTxRequest"
                         }
                     }
                 ],
@@ -118,7 +118,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/go-blocker_internal_interface_http_handler.CheckTxResponse"
+                            "$ref": "#/definitions/payment.CheckTxResponse"
                         }
                     },
                     "400": {
@@ -144,7 +144,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "go-blocker_internal_application_payment.CheckTxRequest": {
+        "payment.CheckTxRequest": {
             "type": "object",
             "properties": {
                 "address": {
@@ -154,7 +154,7 @@ const docTemplate = `{
                 "currency": {
                     "allOf": [
                         {
-                            "$ref": "#/definitions/go-blocker_internal_application_payment.CurrencyType"
+                            "$ref": "#/definitions/payment.CurrencyType"
                         }
                     ],
                     "example": "USDT"
@@ -165,7 +165,18 @@ const docTemplate = `{
                 }
             }
         },
-        "go-blocker_internal_application_payment.CurrencyType": {
+        "payment.CheckTxResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/payment.Status"
+                }
+            }
+        },
+        "payment.CurrencyType": {
             "type": "string",
             "enum": [
                 "ETH",
@@ -178,7 +189,16 @@ const docTemplate = `{
                 "USDC"
             ]
         },
-        "go-blocker_internal_application_payment.FindTxRequest": {
+        "payment.FailedToFind": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "failed to find latest transaction"
+                }
+            }
+        },
+        "payment.FindTxRequest": {
             "type": "object",
             "properties": {
                 "address": {
@@ -189,49 +209,10 @@ const docTemplate = `{
                 "currency": {
                     "allOf": [
                         {
-                            "$ref": "#/definitions/go-blocker_internal_application_payment.CurrencyType"
+                            "$ref": "#/definitions/payment.CurrencyType"
                         }
                     ],
                     "example": "USDT"
-                }
-            }
-        },
-        "go-blocker_internal_interface_http_handler.CheckTxResponse": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/go-blocker_internal_interface_http_handler.Status"
-                }
-            }
-        },
-        "go-blocker_internal_interface_http_handler.Status": {
-            "type": "string",
-            "enum": [
-                "pending",
-                "received",
-                "completed",
-                "timeout",
-                "failed",
-                "mismatch"
-            ],
-            "x-enum-varnames": [
-                "Pending",
-                "Received",
-                "Completed",
-                "Timeout",
-                "Failed",
-                "Mismatch"
-            ]
-        },
-        "payment.FailedToFind": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string",
-                    "example": "failed to find latest transaction"
                 }
             }
         },
@@ -252,6 +233,25 @@ const docTemplate = `{
                     "example": "invalid request"
                 }
             }
+        },
+        "payment.Status": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "received",
+                "completed",
+                "timeout",
+                "failed",
+                "mismatch"
+            ],
+            "x-enum-varnames": [
+                "Pending",
+                "Received",
+                "Completed",
+                "Timeout",
+                "Failed",
+                "Mismatch"
+            ]
         }
     }
 }`
