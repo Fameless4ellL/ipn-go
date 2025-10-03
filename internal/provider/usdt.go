@@ -2,10 +2,8 @@ package provider
 
 import (
 	"context"
-	"fmt"
 	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/provider/etherscan"
-	"go-blocker/internal/storage"
 	"log"
 	"math/big"
 	"strings"
@@ -14,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/google/uuid"
 )
 
 type USDT struct{}
@@ -42,15 +39,6 @@ func (w *USDT) Abi() abi.ABI {
 		log.Fatal(err)
 	}
 	return parsedABI
-}
-
-func (w *USDT) CheckAddress(address string) (uuid.UUID, error) {
-	// Base Transfer From - To
-	if id, ok := storage.PaymentAddressStore.Get(address); ok {
-		return id, nil
-	}
-
-	return uuid.Nil, fmt.Errorf("no matching address found")
 }
 
 func (w *USDT) Checklogs(tx *types.Receipt, address string) (string, bool) {

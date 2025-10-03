@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"go-blocker/internal/application/payment"
+	application "go-blocker/internal/application/payment"
 	repository "go-blocker/internal/infrastructure/payment"
 	database "go-blocker/internal/interface/db"
 	server "go-blocker/internal/interface/http"
@@ -52,7 +52,7 @@ func main() {
 
 	db := database.New()
 	repo := repository.NewRepository(db)
-	service := payment.NewService(repo)
+	service := application.NewService(repo)
 	h := handler.NewRepository(service)
 
 	router := server.RegisterRoutes(h)

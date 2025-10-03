@@ -3,8 +3,8 @@ package provider
 import (
 	"context"
 	logger "go-blocker/internal/pkg/log"
+	"go-blocker/internal/pkg/utils"
 	"go-blocker/internal/provider/etherscan"
-	"go-blocker/internal/utils"
 	"math/big"
 	"strings"
 

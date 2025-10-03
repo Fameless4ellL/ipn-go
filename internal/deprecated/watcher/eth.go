@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	app "go-blocker/internal/application/payment"
-	"go-blocker/internal/infrastructure/payment"
+	domain "go-blocker/internal/domain/payment"
 	logger "go-blocker/internal/pkg/log"
+	"go-blocker/internal/pkg/utils"
 	"go-blocker/internal/rpc"
-	"go-blocker/internal/storage"
-	"go-blocker/internal/utils"
+	"go-blocker/internal/deprecated/storage"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -49,7 +49,7 @@ func (w *ETH) GetPendingBalance(client *ethclient.Client, wallet common.Address)
 		if err != nil {
 			return *ethBalance
 		}
-		w.S.Status(id, payment.Received, nil, nil, nil)
+		w.S.Status(id, domain.Received, nil, nil, nil)
 		storage.PaymentAddressStore.SetPending(wallet.Hex(), true)
 	}
 	return *ethBalance
@@ -86,7 +86,7 @@ func (w *ETH) CheckTransactions(m *rpc.Manager, client *ethclient.Client, block 
 		txid = Tx.Hash().Hex()
 
 		logger.Log.Infof("ETH: Incoming transaction %s, Amount: %s", tx.Hash().Hex(), eth)
-		w.S.Status(id, payment.Completed, &eth, &txid, nil)
+		w.S.Status(id, domain.Completed, &eth, &txid, nil)
 	}
 
 	if !isSent {
@@ -131,7 +131,7 @@ func (w *ETH) CheckInternalTxs(m *rpc.Manager, client *ethclient.Client, block *
 		logger.Log.Infof("ETH: Incoming transaction %s, Amount: %s", txid, eth)
 
 		IsStuck := true
-		w.S.Status(id, payment.Completed, &eth, &txid, &IsStuck)
+		w.S.Status(id, domain.Completed, &eth, &txid, &IsStuck)
 	}
 }
 

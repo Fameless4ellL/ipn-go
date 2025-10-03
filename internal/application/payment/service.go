@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	// domain "go-blocker/internal/domain/payment"
-	"go-blocker/internal/infrastructure/notifier"
+	domain "go-blocker/internal/domain/payment"
 	"go-blocker/internal/infrastructure/payment"
 	"go-blocker/internal/pkg/config"
+	"go-blocker/internal/pkg/utils"
 	"go-blocker/internal/provider"
 	"go-blocker/internal/rpc"
 	"time"
@@ -16,32 +16,24 @@ import (
 )
 
 type Service struct {
-	Repo Repository
-	// domain *domain.Service
+	Repo domain.Repository
 }
 
-func NewService(repo Repository) *Service {
+func NewService(repo domain.Repository) *Service {
 	return &Service{Repo: repo}
 }
 
-func (s *Service) Create(p *WebhookRequest) (*payment.Payment, error) {
-	payment := &payment.Payment{
-		ID:          uuid.New(),
-		Address:     p.Address,
-		Currency:    p.Currency,
-		Amount:      p.Amount,
-		Timeout:     p.Timeout,
-		CallbackURL: p.CallbackURL,
-		Status:      payment.Pending,
-		CreatedAt:   time.Now(),
-		ExpiresAt:   time.Now().Add(time.Duration(p.Timeout) * time.Minute),
+func (s *Service) Create(p *WebhookRequest) (*domain.Payment, error) {
+	pay, err := domain.NewPayment(p.Address, p.Currency, p.Amount, p.Timeout, p.CallbackURL)
+	if err != nil {
+		return nil, err
 	}
-	return payment, s.Repo.Save(payment)
+	return pay, s.Repo.Save(pay)
 }
 
 func (s *Service) Status(
 	id uuid.UUID,
-	status payment.Status,
+	status domain.Status,
 	receivedAmount *string,
 	txID *string,
 	isContractMatch *bool,
@@ -50,12 +42,12 @@ func (s *Service) Status(
 }
 
 func (s *Service) ExpireTimedOutPayments() error {
-	return s.Repo.ExpireWhere(func(p *payment.Payment) bool {
-		return p.Status == payment.Pending && time.Now().After(p.ExpiresAt)
+	return s.Repo.ExpireWhere(func(p *domain.Payment) bool {
+		return p.Status == domain.Pending && time.Now().After(p.ExpiresAt)
 	})
 }
 
-func (s *Service) ListPendingPayments() ([]payment.Payment, error) {
+func (s *Service) ListPendingPayments() ([]*domain.Payment, error) {
 	return s.Repo.ListPending()
 }
 
@@ -81,7 +73,7 @@ func (s *Service) CheckTx(req *CheckTxRequest) (*CheckTxResponse, error) {
 
 		amount, IsStuck := watcher.IsTransactionMatch(client, url, req.Address, req.TxID)
 		if IsStuck {
-			notifier.Send(map[string]interface{}{
+			utils.Send(map[string]interface{}{
 				"status":          payment.Received,
 				"address":         req.Address,
 				"stuck":           true,
@@ -90,12 +82,12 @@ func (s *Service) CheckTx(req *CheckTxRequest) (*CheckTxResponse, error) {
 				"currency":        string(watcher.Name()),
 			}, url)
 			return &CheckTxResponse{
-				Status: payment.Received,
+				Status: domain.Received,
 				Amount: amount,
 			}, nil
 		} else if amount != "" {
 			return &CheckTxResponse{
-				Status: payment.Completed,
+				Status: domain.Completed,
 				Amount: amount,
 			}, nil
 		}
@@ -123,7 +115,7 @@ func (s *Service) FindLatestTx(req *FindTxRequest) (*CheckTxResponse, error) {
 
 		amount, IsStuck := watcher.GetLatestTx(client, url, req.Address)
 		if IsStuck {
-			notifier.Send(map[string]interface{}{
+			utils.Send(map[string]interface{}{
 				"status":          payment.Received,
 				"address":         req.Address,
 				"stuck":           true,
@@ -132,12 +124,12 @@ func (s *Service) FindLatestTx(req *FindTxRequest) (*CheckTxResponse, error) {
 				"currency":        string(watcher.Name()),
 			}, url)
 			return &CheckTxResponse{
-				Status: payment.Received,
+				Status: domain.Received,
 				Amount: amount,
 			}, nil
 		} else if amount != "" {
 			return &CheckTxResponse{
-				Status: payment.Completed,
+				Status: domain.Completed,
 				Amount: amount,
 			}, nil
 		}

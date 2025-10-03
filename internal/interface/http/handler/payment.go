@@ -2,7 +2,7 @@ package payment
 
 import (
 	"go-blocker/internal/application/payment"
-	"go-blocker/internal/storage"
+	"go-blocker/internal/deprecated/storage"
 	"net/http"
 
 	_ "go-blocker/cmd/docs"
@@ -39,8 +39,8 @@ func (h *Handler) Webhook(c *gin.Context) {
 		return
 	}
 
-	storage.PaymentAddressStore.Set(req.Address, obj.ID)
-	resp := payment.WebhookResponse{ID: obj.ID.String(), Status: obj.Status}
+	storage.PaymentAddressStore.Set(req.Address, obj.GetID())
+	resp := payment.WebhookResponse{ID: obj.GetID().String(), Status: obj.Status}
 	c.JSON(http.StatusOK, resp)
 }
 
@@ -63,7 +63,7 @@ func (h *Handler) Status(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"id":            payment.ID.String(),
+		"id":            payment.ID,
 		"status":        payment.Status,
 		"amount":        payment.Amount,
 		"actual_amount": payment.ReceivedAmount,

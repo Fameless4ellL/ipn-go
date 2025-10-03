@@ -1,10 +1,11 @@
 package payment
 
 import (
-	"go-blocker/internal/infrastructure/notifier"
+	"go-blocker/internal/deprecated/storage"
+	domain "go-blocker/internal/domain/payment"
 	"go-blocker/internal/pkg/config"
 	logger "go-blocker/internal/pkg/log"
-	"go-blocker/internal/storage"
+	"go-blocker/internal/pkg/utils"
 	"math/big"
 
 	"github.com/google/uuid"
@@ -19,21 +20,22 @@ func NewRepository(db *gorm.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) Save(p *Payment) error {
-	return r.db.Create(&p).Error
+func (r *Repository) Save(p *domain.Payment) error {
+	model := FromDomain(p)
+	return r.db.Create(&model).Error
 }
 
-func (r *Repository) FindByID(id uuid.UUID) (*Payment, error) {
-	var model Payment
+func (r *Repository) FindByID(id uuid.UUID) (*domain.Payment, error) {
+	var model PaymentModel
 	if err := r.db.First(&model, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
-	return &model, nil
+	return model.ToDomain(), nil
 }
 
 func (r *Repository) UpdateStatus(
 	id uuid.UUID,
-	status Status,
+	status domain.Status,
 	receivedAmount *string,
 	txID *string,
 	isContractMatch *bool,
@@ -42,11 +44,11 @@ func (r *Repository) UpdateStatus(
 	if err != nil {
 		return err
 	}
-
 	updates := map[string]interface{}{
 		"status": string(status),
 	}
 	p.Status = status
+	model := FromDomain(p)
 
 	if receivedAmount != nil {
 		updates["received_amount"] = *receivedAmount
@@ -62,7 +64,7 @@ func (r *Repository) UpdateStatus(
 	}
 
 	// check isBalanceSufficient
-	if status == Completed && receivedAmount != nil {
+	if model.Status == Completed && receivedAmount != nil {
 		balance, _, err := big.ParseFloat(*receivedAmount, 10, 64, big.ToNearestEven)
 		if err != nil {
 			return err
@@ -70,30 +72,30 @@ func (r *Repository) UpdateStatus(
 		if !r.isBalanceSufficient(balance, p.Amount) {
 			logger.Log.Debugf("Payment %s: balance %s is less than expected %s", id, *receivedAmount, p.Amount)
 			updates["status"] = string(Mismatch)
-			p.Status = Mismatch
+			model.Status = Mismatch
 		}
 	}
 
-	if status != Pending && status != Received {
+	if model.Status != Pending && model.Status != Received {
 		storage.PaymentAddressStore.Delete(p.Address)
 	}
 
-	notifier.Send(p.MakePayload(), p.CallbackURL)
+	utils.Send(model.MakePayload(), p.CallbackURL)
 
-	return r.db.Model(&Payment{}).
+	return r.db.Model(&PaymentModel{}).
 		Where("id = ?", id).
 		Updates(updates).Error
 }
 
-func (r *Repository) ExpireWhere(condition func(*Payment) bool) error {
-	var payments []Payment
+func (r *Repository) ExpireWhere(condition func(*domain.Payment) bool) error {
+	var payments []PaymentModel
 	if err := r.db.Find(&payments).Error; err != nil {
 		return err
 	}
 
 	for _, p := range payments {
-		if condition(&p) {
-			if err := r.UpdateStatus(p.ID, Timeout, nil, nil, nil); err != nil {
+		if condition(p.ToDomain()) {
+			if err := r.UpdateStatus(p.ID, domain.Timeout, nil, nil, nil); err != nil {
 				return err
 			}
 		}
@@ -101,10 +103,14 @@ func (r *Repository) ExpireWhere(condition func(*Payment) bool) error {
 	return nil
 }
 
-func (r *Repository) ListPending() ([]Payment, error) {
-	var payments []Payment
-	err := r.db.Where("status = ?", "pending").Find(&payments).Error
-	return payments, err
+func (r *Repository) ListPending() ([]*domain.Payment, error) {
+	var models []PaymentModel
+	err := r.db.Where("status = ?", "pending").Find(&models).Error
+	domainPayments := make([]*domain.Payment, len(models))
+	for i, model := range models {
+		domainPayments[i] = model.ToDomain()
+	}
+	return domainPayments, err
 }
 
 func (s *Repository) isBalanceSufficient(balance *big.Float, expected string) bool {

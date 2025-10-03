@@ -27,7 +27,7 @@ func New() *gorm.DB {
 	}
 
 	// Auto-migrate the schema
-	err = db.AutoMigrate(&payment.Payment{})
+	err = db.AutoMigrate(&payment.PaymentModel{})
 	if err != nil {
 		logger.Log.Fatal("failed to migrate schema:", err)
 	}

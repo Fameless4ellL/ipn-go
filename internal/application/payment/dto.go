@@ -1,7 +1,7 @@
 package payment
 
 import (
-	"go-blocker/internal/infrastructure/payment"
+	"go-blocker/internal/domain/payment"
 )
 
 // WebhookRequest represents the incoming webhook payload

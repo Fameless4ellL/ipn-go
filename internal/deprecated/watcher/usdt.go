@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	app "go-blocker/internal/application/payment"
-	"go-blocker/internal/infrastructure/payment"
+	"go-blocker/internal/deprecated/storage"
+	domain "go-blocker/internal/domain/payment"
 	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/rpc"
-	"go-blocker/internal/storage"
 	"log"
 	"math/big"
 	"strings"
@@ -89,7 +89,7 @@ func (w *USDT) Checklogs(client *ethclient.Client, tx *types.Receipt) {
 				txId := log.TxHash.Hex()
 				isContractMatch := tx.ContractAddress != w.Address()
 
-				w.S.Status(id, payment.Completed, &usdt, &txId, &isContractMatch)
+				w.S.Status(id, domain.Completed, &usdt, &txId, &isContractMatch)
 			}
 		}
 	}
@@ -127,7 +127,7 @@ func (w *USDT) GetPendingBalance(client *ethclient.Client, wallet common.Address
 		if err != nil {
 			return *usdtBalance
 		}
-		w.S.Status(id, payment.Received, nil, nil, nil)
+		w.S.Status(id, domain.Received, nil, nil, nil)
 		storage.PaymentAddressStore.SetPending(wallet.Hex(), true)
 	}
 

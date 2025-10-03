@@ -2,10 +2,10 @@ package blocker
 
 import (
 	"go-blocker/internal/application/payment"
+	"go-blocker/internal/deprecated/storage"
+	"go-blocker/internal/deprecated/watcher"
 	"go-blocker/internal/pkg/config"
 	"go-blocker/internal/rpc"
-	"go-blocker/internal/storage"
-	"go-blocker/internal/watcher"
 	"time"
 )
 
