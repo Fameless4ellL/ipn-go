@@ -6,11 +6,13 @@ import (
 
 	application "go-blocker/internal/application/payment"
 	repository "go-blocker/internal/infrastructure/payment"
+	blockchain "go-blocker/internal/infrastructure/provider"
 	database "go-blocker/internal/interface/db"
 	server "go-blocker/internal/interface/http"
 	handler "go-blocker/internal/interface/http/handler"
 	"go-blocker/internal/pkg/config"
 	logger "go-blocker/internal/pkg/log"
+	"go-blocker/internal/rpc"
 	"os/signal"
 	"syscall"
 	"time"
@@ -52,14 +54,17 @@ func main() {
 
 	db := database.New()
 	repo := repository.NewRepository(db)
-	service := application.NewService(repo)
+	manager := rpc.NewManager()
+	watcher := blockchain.NewCurrencyWatcherRegistry()
+
+	service := application.NewService(repo, manager, watcher)
 	h := handler.NewRepository(service)
 
 	router := server.RegisterRoutes(h)
 	srv := server.NewServer(router)
 	go gracefulShutdown(srv, done)
 
-	// old algorithm
+	// old algorithm (deprecated)
 	// storage.InitStores() // Initialize the global stores, including payment
 	// blocker.Start(service)
 	// worker.Start(service)

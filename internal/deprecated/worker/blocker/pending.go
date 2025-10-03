@@ -4,8 +4,8 @@ import (
 	"go-blocker/internal/application/payment"
 	"go-blocker/internal/deprecated/storage"
 	"go-blocker/internal/deprecated/watcher"
+	blockchain "go-blocker/internal/domain/blockchain"
 	logger "go-blocker/internal/pkg/log"
-	"go-blocker/internal/rpc"
 	"sync"
 	"time"
 
@@ -15,13 +15,13 @@ import (
 
 var (
 	pendingMutex sync.Mutex
-	pending      = make(map[rpc.ChainType]bool)
+	pending      = make(map[blockchain.ChainType]bool)
 )
 
 func Pending(
 	s *payment.Service,
-	manager *rpc.Manager,
-	watchersmaped map[rpc.ChainType][]watcher.CurrencyWatcher,
+	manager blockchain.Manager,
+	watchersmaped map[blockchain.ChainType][]watcher.CurrencyWatcher,
 ) {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
@@ -40,7 +40,7 @@ func Pending(
 			pending[chain] = true
 			pendingMutex.Unlock()
 
-			client, url, err := manager.GetClientForChain(rpc.ChainType(chain))
+			client, url, err := manager.GetClientForChain(blockchain.ChainType(chain))
 			if err != nil {
 				logger.Log.Debugf("[%s] No healthy RPC nodes for %s", chain, url)
 				pendingMutex.Lock()
@@ -48,7 +48,7 @@ func Pending(
 				pendingMutex.Unlock()
 				continue
 			}
-			go func(chain rpc.ChainType, watchers []watcher.CurrencyWatcher, client *ethclient.Client) {
+			go func(chain blockchain.ChainType, watchers []watcher.CurrencyWatcher, client *ethclient.Client) {
 				defer func() {
 					pendingMutex.Lock()
 					pending[chain] = false

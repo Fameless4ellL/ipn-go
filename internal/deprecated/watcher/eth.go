@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	app "go-blocker/internal/application/payment"
+	"go-blocker/internal/deprecated/storage"
+	blockchain "go-blocker/internal/domain/blockchain"
 	domain "go-blocker/internal/domain/payment"
 	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/pkg/utils"
 	"go-blocker/internal/rpc"
-	"go-blocker/internal/deprecated/storage"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -107,7 +108,7 @@ func (w *ETH) CheckAddress(address string) (uuid.UUID, error) {
 }
 
 func (w *ETH) CheckInternalTxs(m *rpc.Manager, client *ethclient.Client, block *types.Receipt) {
-	_, url, err := m.GetClientForChain(rpc.ChainType(w.Chain()))
+	_, url, err := m.GetClientForChain(blockchain.ChainType(w.Chain()))
 	if err != nil {
 		logger.Log.Debugf("[%s] No healthy RPC node for %s", w.Chain(), url)
 		return

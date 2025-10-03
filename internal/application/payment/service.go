@@ -1,30 +1,28 @@
 package payment
 
 import (
-	"errors"
 	"fmt"
 
-	domain "go-blocker/internal/domain/payment"
-	"go-blocker/internal/infrastructure/payment"
-	"go-blocker/internal/pkg/config"
+	blockchain "go-blocker/internal/domain/blockchain"
+	payment "go-blocker/internal/domain/payment"
 	"go-blocker/internal/pkg/utils"
-	"go-blocker/internal/provider"
-	"go-blocker/internal/rpc"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 type Service struct {
-	Repo domain.Repository
+	Repo     payment.Repository
+	Manager  blockchain.Manager
+	Provider blockchain.Watcher
 }
 
-func NewService(repo domain.Repository) *Service {
-	return &Service{Repo: repo}
+func NewService(repo payment.Repository, m blockchain.Manager, p blockchain.Watcher) *Service {
+	return &Service{Repo: repo, Manager: m, Provider: p}
 }
 
-func (s *Service) Create(p *WebhookRequest) (*domain.Payment, error) {
-	pay, err := domain.NewPayment(p.Address, p.Currency, p.Amount, p.Timeout, p.CallbackURL)
+func (s *Service) Create(p *WebhookRequest) (*payment.Payment, error) {
+	pay, err := payment.NewPayment(p.Address, p.Currency, p.Amount, p.Timeout, p.CallbackURL)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +31,7 @@ func (s *Service) Create(p *WebhookRequest) (*domain.Payment, error) {
 
 func (s *Service) Status(
 	id uuid.UUID,
-	status domain.Status,
+	status payment.Status,
 	receivedAmount *string,
 	txID *string,
 	isContractMatch *bool,
@@ -42,97 +40,79 @@ func (s *Service) Status(
 }
 
 func (s *Service) ExpireTimedOutPayments() error {
-	return s.Repo.ExpireWhere(func(p *domain.Payment) bool {
-		return p.Status == domain.Pending && time.Now().After(p.ExpiresAt)
+	return s.Repo.ExpireWhere(func(p *payment.Payment) bool {
+		return p.Status == payment.Pending && time.Now().After(p.ExpiresAt)
 	})
 }
 
-func (s *Service) ListPendingPayments() ([]*domain.Payment, error) {
+func (s *Service) ListPendingPayments() ([]*payment.Payment, error) {
 	return s.Repo.ListPending()
 }
 
 func (s *Service) CheckTx(req *CheckTxRequest) (*CheckTxResponse, error) {
-	manager := rpc.NewManager(config.Nodes)
-	client, url, err := manager.GetClientForChain(rpc.Ethereum)
+	client, url, err := s.Manager.GetClientForChain(blockchain.Ethereum)
 	if err != nil {
 		return nil, err
 	}
 
-	group := map[rpc.ChainType][]provider.CurrencyWatcher{
-		rpc.Ethereum: {
-			&provider.ETH{},
-			&provider.USDT{},
-			&provider.USDC{},
-		},
-	}[rpc.Ethereum]
-
-	for _, watcher := range group {
-		if watcher.Name() != string(req.Currency) {
-			continue
-		}
-
-		amount, IsStuck := watcher.IsTransactionMatch(client, url, req.Address, req.TxID)
-		if IsStuck {
-			utils.Send(map[string]interface{}{
-				"status":          payment.Received,
-				"address":         req.Address,
-				"stuck":           true,
-				"received_amount": fmt.Sprintf("%v", amount),
-				"txid":            fmt.Sprintf("%v", req.TxID),
-				"currency":        string(watcher.Name()),
-			}, url)
-			return &CheckTxResponse{
-				Status: domain.Received,
-				Amount: amount,
-			}, nil
-		} else if amount != "" {
-			return &CheckTxResponse{
-				Status: domain.Completed,
-				Amount: amount,
-			}, nil
-		}
+	currency, err := s.Provider.GetWatcher(blockchain.Ethereum, blockchain.CurrencyType(req.Currency))
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.New("no matching transaction found")
+
+	amount, IsStuck := currency.IsTransactionMatch(client, url, req.Address, req.TxID)
+	if IsStuck {
+		utils.Send(map[string]interface{}{
+			"status":          payment.Received,
+			"address":         req.Address,
+			"stuck":           true,
+			"received_amount": fmt.Sprintf("%v", amount),
+			"txid":            fmt.Sprintf("%v", req.TxID),
+			"currency":        string(currency.Name()),
+		}, url)
+		return &CheckTxResponse{
+			Status: payment.Received,
+			Amount: amount,
+		}, nil
+	} else if amount != "" {
+		return &CheckTxResponse{
+			Status: payment.Completed,
+			Amount: amount,
+		}, nil
+	}
+	return nil, fmt.Errorf("no matching transaction found for address %s and txid %s", req.Address, req.TxID)
 }
 
 func (s *Service) FindLatestTx(req *FindTxRequest) (*CheckTxResponse, error) {
-	manager := rpc.NewManager(config.Nodes)
-	client, url, err := manager.GetClientForChain(rpc.Ethereum)
+	client, url, err := s.Manager.GetClientForChain(blockchain.Ethereum)
 	if err != nil {
 		return nil, err
 	}
-	group := map[rpc.ChainType][]provider.CurrencyWatcher{
-		rpc.Ethereum: {
-			&provider.ETH{},
-			&provider.USDT{},
-			&provider.USDC{},
-		},
-	}[rpc.Ethereum]
-	for _, watcher := range group {
-		if watcher.Name() != string(req.Currency) {
-			continue
-		}
 
-		amount, IsStuck := watcher.GetLatestTx(client, url, req.Address)
-		if IsStuck {
-			utils.Send(map[string]interface{}{
-				"status":          payment.Received,
-				"address":         req.Address,
-				"stuck":           true,
-				"received_amount": fmt.Sprintf("%v", amount),
-				"txid":            "",
-				"currency":        string(watcher.Name()),
-			}, url)
-			return &CheckTxResponse{
-				Status: domain.Received,
-				Amount: amount,
-			}, nil
-		} else if amount != "" {
-			return &CheckTxResponse{
-				Status: domain.Completed,
-				Amount: amount,
-			}, nil
-		}
+	currency, err := s.Provider.GetWatcher(blockchain.Ethereum, blockchain.CurrencyType(req.Currency))
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.New("no matching transaction found")
+
+	amount, IsStuck := currency.GetLatestTx(client, url, req.Address)
+	if IsStuck {
+		utils.Send(map[string]interface{}{
+			"status":          payment.Received,
+			"address":         req.Address,
+			"stuck":           true,
+			"received_amount": fmt.Sprintf("%v", amount),
+			"txid":            "",
+			"currency":        string(currency.Name()),
+		}, url)
+		return &CheckTxResponse{
+			Status: payment.Received,
+			Amount: amount,
+		}, nil
+	} else if amount != "" {
+		return &CheckTxResponse{
+			Status: payment.Completed,
+			Amount: amount,
+		}, nil
+	}
+	return nil, fmt.Errorf("no transactions found for address %s", req.Address)
 }

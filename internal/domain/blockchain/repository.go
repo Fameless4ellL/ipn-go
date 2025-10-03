@@ -1,8 +1,16 @@
-package provider
+package blockchain
 
 import "github.com/ethereum/go-ethereum/ethclient"
 
-type CurrencyWatcher interface {
+type Manager interface {
+	GetClientForChain(chain ChainType) (*ethclient.Client, string, error)
+}
+
+type Watcher interface {
+	GetWatcher(chain ChainType, currency CurrencyType) (Currency, error)
+}
+
+type Currency interface {
 	Name() string
 	Chain() string
 	Decimals() int

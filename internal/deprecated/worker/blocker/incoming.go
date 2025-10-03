@@ -7,7 +7,7 @@ import (
 	"go-blocker/internal/deprecated/storage"
 	"go-blocker/internal/deprecated/watcher"
 	logger "go-blocker/internal/pkg/log"
-	"go-blocker/internal/rpc"
+	blockchain "go-blocker/internal/domain/blockchain"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -18,13 +18,13 @@ import (
 
 var (
 	processingMutex sync.Mutex
-	processing      = make(map[rpc.ChainType]bool)
+	processing      = make(map[blockchain.ChainType]bool)
 )
 
 func IncomingTx(
 	s *payment.Service,
-	manager *rpc.Manager,
-	watchersmaped map[rpc.ChainType][]watcher.CurrencyWatcher,
+	manager blockchain.Manager,
+	watchersmaped map[blockchain.ChainType][]watcher.CurrencyWatcher,
 	tracker storage.BlockTracker,
 ) {
 	ticker := time.NewTicker(5 * time.Second)
@@ -44,7 +44,7 @@ func IncomingTx(
 			processing[chain] = true
 			processingMutex.Unlock()
 
-			client, url, err := manager.GetClientForChain(rpc.ChainType(chain))
+			client, url, err := manager.GetClientForChain(blockchain.ChainType(chain))
 			if err != nil {
 				logger.Log.Debugf("[%s] No healthy RPC nodes for %s", chain, url)
 				processingMutex.Lock()
@@ -60,7 +60,7 @@ func IncomingTx(
 				processingMutex.Unlock()
 				continue
 			}
-			go func(chain rpc.ChainType, watchers []watcher.CurrencyWatcher, client *ethclient.Client, latest uint64) {
+			go func(chain blockchain.ChainType, watchers []watcher.CurrencyWatcher, client *ethclient.Client, latest uint64) {
 				defer func() {
 					processingMutex.Lock()
 					processing[chain] = false
@@ -81,7 +81,7 @@ func IncomingTx(
 
 func Blocker(
 	s *payment.Service,
-	m *rpc.Manager,
+	m blockchain.Manager,
 	watchers []watcher.CurrencyWatcher,
 	client *ethclient.Client,
 	latest uint64,

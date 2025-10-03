@@ -4,7 +4,7 @@ import (
 	"go-blocker/internal/application/payment"
 	"go-blocker/internal/deprecated/storage"
 	"go-blocker/internal/deprecated/watcher"
-	"go-blocker/internal/pkg/config"
+	blockchain "go-blocker/internal/domain/blockchain"
 	"go-blocker/internal/rpc"
 	"time"
 )
@@ -12,14 +12,14 @@ import (
 func Start(
 	service *payment.Service,
 ) {
-	grouped := map[rpc.ChainType][]watcher.CurrencyWatcher{
-		rpc.Ethereum: {
-			&watcher.ETH{S: service},
-			&watcher.USDT{S: service},
+	grouped := map[blockchain.ChainType][]watcher.CurrencyWatcher{
+		blockchain.Ethereum: {
+			// &watcher.ETH{S: service},
+			// &watcher.USDT{S: service},
 		},
 	}
 
-	manager := rpc.NewManager(config.Nodes)
+	manager := rpc.NewManager()
 	manager.StartHealthMonitor(5 * time.Second)
 	tracker := storage.NewMemoryTracker()
 
