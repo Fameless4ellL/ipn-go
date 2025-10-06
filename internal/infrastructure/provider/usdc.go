@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -39,6 +40,35 @@ func (w *USDC) Abi() abi.ABI {
 		log.Fatal(err)
 	}
 	return parsedABI
+}
+
+func (w *USDT) GetPendingBalance(client *ethclient.Client, wallet common.Address) bool {
+	abi := w.Abi()
+
+	data, err := abi.Pack("balanceOf", wallet)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ERC20Address := w.Address()
+	msg := ethereum.CallMsg{
+		To:   &ERC20Address,
+		Data: data,
+	}
+
+	result, err := client.CallContract(context.Background(), msg, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var balance *big.Int
+	err = abi.UnpackIntoInterface(&balance, "balanceOf", result)
+	if err != nil {
+		return false
+	}
+	usdtBalance := new(big.Float).Quo(new(big.Float).SetInt(balance), big.NewFloat(float64(w.Decimals())))
+
+	return usdtBalance.Cmp(big.NewFloat(0)) > 0
 }
 
 func (w *USDC) Checklogs(tx *types.Receipt, address string) (string, bool) {

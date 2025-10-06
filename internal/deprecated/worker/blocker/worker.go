@@ -2,9 +2,9 @@ package blocker
 
 import (
 	"go-blocker/internal/application/payment"
-	"go-blocker/internal/deprecated/storage"
 	"go-blocker/internal/deprecated/watcher"
 	blockchain "go-blocker/internal/domain/blockchain"
+	"go-blocker/internal/infrastructure/storage"
 	"go-blocker/internal/rpc"
 	"time"
 )

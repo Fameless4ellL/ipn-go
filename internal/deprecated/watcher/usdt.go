@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	app "go-blocker/internal/application/payment"
-	"go-blocker/internal/deprecated/storage"
 	domain "go-blocker/internal/domain/payment"
+	"go-blocker/internal/infrastructure/storage"
 	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/rpc"
 	"log"
@@ -65,7 +65,7 @@ func (w *USDT) CheckTransactions(m *rpc.Manager, client *ethclient.Client, block
 func (w *USDT) CheckAddress(address string) (uuid.UUID, error) {
 	// Base Transfer From - To
 	if id, ok := storage.PaymentAddressStore.Get(address); ok {
-		return id, nil
+		return id.ID, nil
 	}
 
 	return uuid.Nil, fmt.Errorf("no matching address found")
@@ -128,7 +128,7 @@ func (w *USDT) GetPendingBalance(client *ethclient.Client, wallet common.Address
 			return *usdtBalance
 		}
 		w.S.Status(id, domain.Received, nil, nil, nil)
-		storage.PaymentAddressStore.SetPending(wallet.Hex(), true)
+		// storage.PaymentAddressStore.SetPending(wallet.Hex(), true)
 	}
 
 	return *usdtBalance

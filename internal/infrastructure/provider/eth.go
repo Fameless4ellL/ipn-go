@@ -2,9 +2,9 @@ package provider
 
 import (
 	"context"
+	"go-blocker/internal/infrastructure/provider/etherscan"
 	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/pkg/utils"
-	"go-blocker/internal/infrastructure/provider/etherscan"
 	"math/big"
 	"strings"
 
@@ -25,6 +25,19 @@ func (w *ETH) Chain() string {
 
 func (w *ETH) Decimals() int {
 	return 18
+}
+
+func (w *ETH) GetPendingBalance(client *ethclient.Client, wallet common.Address) bool {
+	balance, err := client.PendingBalanceAt(context.Background(), wallet)
+	if err != nil {
+		logger.Log.Errorf("ETH: Error getting pending balance for address %s: %s", wallet.Hex(), err)
+		return false
+	}
+
+	ethBalance := new(big.Float).Quo(new(big.Float).SetInt(balance), big.NewFloat(1e18))
+
+	total := big.NewFloat(0)
+	return ethBalance.Cmp(total) > 0
 }
 
 func (w *ETH) CheckInternalTxs(url string, Tx *types.Receipt, address string) (string, bool) {

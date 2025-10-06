@@ -53,7 +53,6 @@ func NewPayment(address, currency, amount string, timeoutMinutes int, callback s
 	return p, nil
 }
 
-
 func (p *Payment) GetID() uuid.UUID {
 	return uuid.UUID(p.ID)
 }

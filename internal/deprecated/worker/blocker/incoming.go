@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"go-blocker/internal/application/payment"
-	"go-blocker/internal/deprecated/storage"
 	"go-blocker/internal/deprecated/watcher"
-	logger "go-blocker/internal/pkg/log"
 	blockchain "go-blocker/internal/domain/blockchain"
+	"go-blocker/internal/infrastructure/storage"
+	logger "go-blocker/internal/pkg/log"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/ethclient"

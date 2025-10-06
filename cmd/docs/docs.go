@@ -141,9 +141,77 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/payment/webhook": {
+            "post": {
+                "description": "Set up a webhook to monitor payments to a specific address",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payment"
+                ],
+                "summary": "Set up a payment webhook",
+                "parameters": [
+                    {
+                        "description": "Webhook setup request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payment.WebhookRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request format",
+                        "schema": {
+                            "$ref": "#/definitions/payment.InvalidRequest"
+                        }
+                    },
+                    "422": {
+                        "description": "Invalid address format",
+                        "schema": {
+                            "$ref": "#/definitions/payment.InvalidAddress"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "internal_application_payment.Status": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "received",
+                "completed",
+                "timeout",
+                "failed",
+                "mismatch"
+            ],
+            "x-enum-varnames": [
+                "Pending",
+                "Received",
+                "Completed",
+                "Timeout",
+                "Failed",
+                "Mismatch"
+            ]
+        },
         "payment.CheckTxRequest": {
             "type": "object",
             "properties": {
@@ -172,7 +240,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "$ref": "#/definitions/payment.Status"
+                    "$ref": "#/definitions/internal_application_payment.Status"
                 }
             }
         },
@@ -234,24 +302,24 @@ const docTemplate = `{
                 }
             }
         },
-        "payment.Status": {
-            "type": "string",
-            "enum": [
-                "pending",
-                "received",
-                "completed",
-                "timeout",
-                "failed",
-                "mismatch"
-            ],
-            "x-enum-varnames": [
-                "Pending",
-                "Received",
-                "Completed",
-                "Timeout",
-                "Failed",
-                "Mismatch"
-            ]
+        "payment.WebhookRequest": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "callback_url": {
+                    "type": "string"
+                },
+                "currency": {
+                    "description": "Network     string ` + "`" + `json:\"network\"` + "`" + `",
+                    "type": "string"
+                },
+                "timeout": {
+                    "description": "Amount      string ` + "`" + `json:\"amount\"` + "`" + `",
+                    "type": "integer"
+                }
+            }
         }
     }
 }`

@@ -1,0 +1,208 @@
+definitions:
+  internal_application_payment.Status:
+    enum:
+    - pending
+    - received
+    - completed
+    - timeout
+    - failed
+    - mismatch
+    type: string
+    x-enum-varnames:
+    - Pending
+    - Received
+    - Completed
+    - Timeout
+    - Failed
+    - Mismatch
+  payment.CheckTxRequest:
+    properties:
+      address:
+        example: 0xabc123...
+        type: string
+      currency:
+        allOf:
+        - $ref: '#/definitions/payment.CurrencyType'
+        example: USDT
+      txid:
+        example: 0xabc123...
+        type: string
+    type: object
+  payment.CheckTxResponse:
+    properties:
+      amount:
+        type: string
+      status:
+        $ref: '#/definitions/internal_application_payment.Status'
+    type: object
+  payment.CurrencyType:
+    enum:
+    - ETH
+    - USDT
+    - USDC
+    type: string
+    x-enum-varnames:
+    - ETH
+    - USDT
+    - USDC
+  payment.FailedToFind:
+    properties:
+      error:
+        example: failed to find latest transaction
+        type: string
+    type: object
+  payment.FindTxRequest:
+    properties:
+      address:
+        example: 0xabc123...
+        format: hex
+        type: string
+      currency:
+        allOf:
+        - $ref: '#/definitions/payment.CurrencyType'
+        example: USDT
+    type: object
+  payment.InvalidAddress:
+    properties:
+      error:
+        example: Invalid address format
+        type: string
+    type: object
+  payment.InvalidRequest:
+    properties:
+      error:
+        example: invalid request
+        type: string
+    type: object
+  payment.WebhookRequest:
+    properties:
+      address:
+        type: string
+      callback_url:
+        type: string
+      currency:
+        description: Network     string `json:"network"`
+        type: string
+      timeout:
+        description: Amount      string `json:"amount"`
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /health:
+    get:
+      description: Returns service status and database connectivity.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service is healthy
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - system
+  /payment/check/transaction:
+    post:
+      consumes:
+      - application/json
+      description: Check if a transaction meets the payment requirements
+      parameters:
+      - description: Check transaction request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/payment.CheckTxRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payment.CheckTxResponse'
+        "400":
+          description: Invalid request format
+          schema:
+            $ref: '#/definitions/payment.InvalidRequest'
+        "422":
+          description: Invalid address format
+          schema:
+            $ref: '#/definitions/payment.InvalidAddress'
+        "503":
+          description: failed to check transaction
+          schema:
+            $ref: '#/definitions/payment.FailedToFind'
+      summary: Check a transaction
+      tags:
+      - payment
+  /payment/find/transaction:
+    post:
+      consumes:
+      - application/json
+      description: Find the latest transaction for a given address
+      parameters:
+      - description: Check transaction request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/payment.FindTxRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payment.CheckTxResponse'
+        "400":
+          description: Invalid request format
+          schema:
+            $ref: '#/definitions/payment.InvalidRequest'
+        "422":
+          description: Invalid address format
+          schema:
+            $ref: '#/definitions/payment.InvalidAddress'
+        "503":
+          description: failed to find latest transaction
+          schema:
+            $ref: '#/definitions/payment.FailedToFind'
+      summary: Find the latest transaction
+      tags:
+      - payment
+  /payment/webhook:
+    post:
+      consumes:
+      - application/json
+      description: Set up a webhook to monitor payments to a specific address
+      parameters:
+      - description: Webhook setup request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/payment.WebhookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request format
+          schema:
+            $ref: '#/definitions/payment.InvalidRequest'
+        "422":
+          description: Invalid address format
+          schema:
+            $ref: '#/definitions/payment.InvalidAddress'
+      summary: Set up a payment webhook
+      tags:
+      - payment
+swagger: "2.0"

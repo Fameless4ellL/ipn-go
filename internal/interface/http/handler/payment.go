@@ -2,8 +2,9 @@ package payment
 
 import (
 	"go-blocker/internal/application/payment"
-	"go-blocker/internal/deprecated/storage"
+	"go-blocker/internal/domain/blockchain"
 	"net/http"
+	"time"
 
 	_ "go-blocker/cmd/docs"
 
@@ -20,6 +21,16 @@ func NewRepository(s *payment.Service) *Handler {
 	return &Handler{Service: s}
 }
 
+// @Summary	  Set up a payment webhook
+// @Description  Set up a webhook to monitor payments to a specific address
+// @Tags         payment
+// @Accept       json
+// @Param request body payment.WebhookRequest true "Webhook setup request"
+// @Produce      json
+// @Success      200 {object} map[string]string
+// @Failure      400 {object} InvalidRequest "Invalid request format"
+// @Failure      422 {object} InvalidAddress "Invalid address format"
+// @Router       /payment/webhook [post]
 func (h *Handler) Webhook(c *gin.Context) {
 	var req payment.WebhookRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -32,16 +43,14 @@ func (h *Handler) Webhook(c *gin.Context) {
 		return
 	}
 
-	obj, err := h.Service.Create(&req)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create payment"})
-		return
-	}
-
-	storage.PaymentAddressStore.Set(req.Address, obj.GetID())
-	resp := payment.WebhookResponse{ID: obj.GetID().String(), Status: obj.Status}
-	c.JSON(http.StatusOK, resp)
+	h.Service.Box.Set(
+		req.Address,
+		uuid.New(),
+		blockchain.CurrencyType(req.Currency),
+		req.CallbackURL,
+		time.Now().Add(time.Duration(req.Timeout)*time.Minute),
+	)
+	c.JSON(http.StatusOK, gin.H{"status": "webhook settled"})
 }
 
 func (h *Handler) Status(c *gin.Context) {
@@ -83,7 +92,7 @@ func (h *Handler) Status(c *gin.Context) {
 // @Accept       json
 // @Param request body payment.CheckTxRequest true "Check transaction request"
 // @Produce      json
-// @Success      200  {object}  CheckTxResponse
+// @Success      200 {object} payment.CheckTxResponse
 // @Failure      400 {object} InvalidRequest "Invalid request format"
 // @Failure      422 {object} InvalidAddress "Invalid address format"
 // @Failure      503 {object} FailedToFind "failed to check transaction"
@@ -114,7 +123,7 @@ func (h *Handler) CheckTx(c *gin.Context) {
 // @Accept       json
 // @Param request body payment.FindTxRequest true "Check transaction request"
 // @Produce      json
-// @Success      200  {object}  CheckTxResponse
+// @Success      200 {object} payment.CheckTxResponse
 // @Failure      400 {object} InvalidRequest "Invalid request format"
 // @Failure      422 {object} InvalidAddress "Invalid address format"
 // @Failure      503 {object} FailedToFind  "failed to find latest transaction"

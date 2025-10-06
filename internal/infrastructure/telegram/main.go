@@ -28,5 +28,6 @@ func Init() {
 	b.Handle("/healthcheck", handlers.HealthCheck)
 	b.Handle("/checktx", handlers.CheckTx)
 	b.Handle("/findtx", handlers.FindTx)
-	b.Start()
+	b.Handle("/SetChatID", handlers.SetChatID)
+	go b.Start()
 }

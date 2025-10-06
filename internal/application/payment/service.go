@@ -15,14 +15,20 @@ type Service struct {
 	Repo     payment.Repository
 	Manager  blockchain.Manager
 	Provider blockchain.Watcher
+	Box      blockchain.Storage
 }
 
-func NewService(repo payment.Repository, m blockchain.Manager, p blockchain.Watcher) *Service {
-	return &Service{Repo: repo, Manager: m, Provider: p}
+func NewService(
+	repo payment.Repository,
+	m blockchain.Manager,
+	p blockchain.Watcher,
+	b blockchain.Storage,
+) *Service {
+	return &Service{Repo: repo, Manager: m, Provider: p, Box: b}
 }
 
 func (s *Service) Create(p *WebhookRequest) (*payment.Payment, error) {
-	pay, err := payment.NewPayment(p.Address, p.Currency, p.Amount, p.Timeout, p.CallbackURL)
+	pay, err := payment.NewPayment(p.Address, p.Currency, "0", p.Timeout, p.CallbackURL)
 	if err != nil {
 		return nil, err
 	}
@@ -60,6 +66,7 @@ func (s *Service) CheckTx(req *CheckTxRequest) (*CheckTxResponse, error) {
 		return nil, err
 	}
 
+	address, _ := s.Box.Get(req.Address)
 	amount, IsStuck := currency.IsTransactionMatch(client, url, req.Address, req.TxID)
 	if IsStuck {
 		utils.Send(map[string]interface{}{
@@ -69,7 +76,8 @@ func (s *Service) CheckTx(req *CheckTxRequest) (*CheckTxResponse, error) {
 			"received_amount": fmt.Sprintf("%v", amount),
 			"txid":            fmt.Sprintf("%v", req.TxID),
 			"currency":        string(currency.Name()),
-		}, url)
+		}, address.Callback)
+		s.Box.Delete(req.Address)
 		return &CheckTxResponse{
 			Status: payment.Received,
 			Amount: amount,
@@ -94,6 +102,8 @@ func (s *Service) FindLatestTx(req *FindTxRequest) (*CheckTxResponse, error) {
 		return nil, err
 	}
 
+	address, _ := s.Box.Get(req.Address)
+
 	amount, IsStuck := currency.GetLatestTx(client, url, req.Address)
 	if IsStuck {
 		utils.Send(map[string]interface{}{
@@ -103,7 +113,8 @@ func (s *Service) FindLatestTx(req *FindTxRequest) (*CheckTxResponse, error) {
 			"received_amount": fmt.Sprintf("%v", amount),
 			"txid":            "",
 			"currency":        string(currency.Name()),
-		}, url)
+		}, address.Callback)
+		s.Box.Delete(req.Address)
 		return &CheckTxResponse{
 			Status: payment.Received,
 			Amount: amount,

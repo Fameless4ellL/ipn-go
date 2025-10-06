@@ -7,6 +7,9 @@ import (
 	application "go-blocker/internal/application/payment"
 	repository "go-blocker/internal/infrastructure/payment"
 	blockchain "go-blocker/internal/infrastructure/provider"
+	storage "go-blocker/internal/infrastructure/storage"
+	"go-blocker/internal/infrastructure/telegram"
+	worker "go-blocker/internal/infrastructure/worker"
 	database "go-blocker/internal/interface/db"
 	server "go-blocker/internal/interface/http"
 	handler "go-blocker/internal/interface/http/handler"
@@ -50,14 +53,15 @@ func main() {
 
 	// Run graceful shutdown in a separate goroutine
 
-	// telegram.Init()
+	telegram.Init()
+	box := storage.NewAddressStore()
 
 	db := database.New()
 	repo := repository.NewRepository(db)
 	manager := rpc.NewManager()
 	watcher := blockchain.NewCurrencyWatcherRegistry()
 
-	service := application.NewService(repo, manager, watcher)
+	service := application.NewService(repo, manager, watcher, box)
 	h := handler.NewRepository(service)
 
 	router := server.RegisterRoutes(h)
@@ -68,6 +72,11 @@ func main() {
 	// storage.InitStores() // Initialize the global stores, including payment
 	// blocker.Start(service)
 	// worker.Start(service)
+
+	work := worker.NewWorker(service, 10*time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go work.Start(ctx)
 
 	err := srv.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {

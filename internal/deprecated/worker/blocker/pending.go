@@ -2,14 +2,13 @@ package blocker
 
 import (
 	"go-blocker/internal/application/payment"
-	"go-blocker/internal/deprecated/storage"
 	"go-blocker/internal/deprecated/watcher"
 	blockchain "go-blocker/internal/domain/blockchain"
+	"go-blocker/internal/infrastructure/storage"
 	logger "go-blocker/internal/pkg/log"
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -54,15 +53,15 @@ func Pending(
 					pending[chain] = false
 					pendingMutex.Unlock()
 				}()
-				for _, address := range storage.PaymentAddressStore.List() {
-					if storage.PaymentAddressStore.IsPending(address) {
-						continue
-					}
+				// for _, address := range storage.PaymentAddressStore.List() {
+				// 	// if storage.PaymentAddressStore.IsPending(address) {
+				// 	// 	continue
+				// 	// }
 
-					for _, w := range watchers {
-						w.GetPendingBalance(client, common.HexToAddress(address))
-					}
-				}
+				// 	for _, w := range watchers {
+				// 		w.GetPendingBalance(client, common.HexToAddress(address.))
+				// 	}
+				// }
 
 				time.Sleep(1 * time.Second)
 			}(chain, watchers, client)

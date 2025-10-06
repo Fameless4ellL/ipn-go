@@ -31,7 +31,7 @@ func RegisterRoutes(h *payment.Handler) *gin.Engine {
 			v1.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 			pay := v1.Group("/payment")
 			{
-				// pay.POST("/webhook", h.Webhook)
+				pay.POST("/webhook", h.Webhook)
 				// pay.GET("/status/:id", h.Status)
 				pay.POST("/check/transaction", h.CheckTx)
 				pay.POST("/find/transaction", h.FindLatestTx)
