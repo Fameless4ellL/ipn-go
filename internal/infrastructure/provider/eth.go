@@ -89,7 +89,7 @@ func (w *ETH) IsTransactionMatch(client *ethclient.Client, url string, address s
 
 	logger.Log.Infof("ETH: Incoming transaction %s, Amount: %s", Tx.Hash().Hex(), eth)
 
-	return eth, true
+	return eth, false
 }
 
 func (w *ETH) GetLatestTx(client *ethclient.Client, url string, address string) (string, bool) {
