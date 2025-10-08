@@ -58,10 +58,10 @@ func (w *Worker) executeCheck() {
 			utils.Send(map[string]interface{}{
 				"status":          payment.Timeout,
 				"address":         addr.Address.String(),
-				"stuck":           true,
+				"stuck":           false,
 				"received_amount": "0",
-				"txid":            "",
-				"currency":        string(addr.Currency),
+				// "txid":            "",
+				"currency": string(addr.Currency),
 			}, addr.Callback)
 			w.Service.Box.Delete(addr.Address.String())
 			continue
@@ -74,7 +74,6 @@ func (w *Worker) executeCheck() {
 			continue
 		}
 		isbalanced := currency.GetPendingBalance(client, addr.Address)
-		println("Checked address:", addr.Address.String(), "Balance pending:", isbalanced)
 		if isbalanced {
 			amount, isstuck := currency.GetLatestTx(client, url, addr.Address.String())
 			utils.Send(map[string]interface{}{
