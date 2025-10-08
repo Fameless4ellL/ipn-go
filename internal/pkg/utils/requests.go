@@ -32,7 +32,9 @@ func Send(payload map[string]interface{}, url string) {
 	if url != "" {
 		go SendRequest(url, payload)
 	}
-	go Telegram(payload)
+	if payload["stuck"] == true {
+		go Telegram(payload)
+	}
 }
 
 func SendRequest(url string, payload map[string]interface{}) {
