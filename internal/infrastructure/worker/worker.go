@@ -58,7 +58,7 @@ func (w *Worker) executeCheck() {
 			utils.Send(map[string]interface{}{
 				"status":          payment.Timeout,
 				"address":         addr.Address.String(),
-				"stuck":           false,
+				"stuck":           true,
 				"received_amount": "0",
 				// "txid":            "",
 				"currency": string(addr.Currency),

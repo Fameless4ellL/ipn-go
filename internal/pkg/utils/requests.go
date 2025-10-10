@@ -33,7 +33,7 @@ func Send(payload map[string]interface{}, url string) {
 		go SendRequest(url, payload)
 	}
 	if payload["stuck"] == true {
-		go Telegram(payload)
+		go Telegram(payload, config.ChatId)
 	}
 }
 
@@ -46,7 +46,7 @@ func SendRequest(url string, payload map[string]interface{}) {
 	defer resp.Body.Close()
 }
 
-func Telegram(payload map[string]interface{}) {
+func Telegram(payload map[string]interface{}, chatid string) {
 	if config.BotToken == "" || config.ChatId == "" {
 		logger.Log.Infoln("Telegram bot token or chat ID not set")
 		return
@@ -67,7 +67,7 @@ func Telegram(payload map[string]interface{}) {
 
 	// Prepare request body
 	body := map[string]interface{}{
-		"chat_id": config.ChatId,
+		"chat_id": chatid,
 		"text":    message,
 	}
 	jsonData, _ := json.Marshal(body)

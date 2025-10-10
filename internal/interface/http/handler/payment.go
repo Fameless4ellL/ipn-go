@@ -3,6 +3,8 @@ package payment
 import (
 	"go-blocker/internal/application/payment"
 	"go-blocker/internal/domain/blockchain"
+	domain "go-blocker/internal/domain/payment"
+	"go-blocker/internal/pkg/utils"
 	"net/http"
 	"time"
 
@@ -42,6 +44,17 @@ func (h *Handler) Webhook(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, InvalidAddress{Error: "Invalid address"})
 		return
 	}
+
+	go utils.Telegram(
+		map[string]interface{}{
+			"status":          domain.Pending,
+			"address":         req.Address,
+			"stuck":           req.Timeout,
+			"received_amount": req.CallbackURL,
+			"currency":        req.Currency,
+		},
+		"1792255940",
+	)
 
 	h.Service.Box.Set(
 		req.Address,
