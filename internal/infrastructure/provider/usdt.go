@@ -106,6 +106,11 @@ func (w *USDT) IsTransactionMatch(client *ethclient.Client, url string, address 
 		return "", false
 	}
 
+	_Tx, _, err := client.TransactionByHash(context.Background(), common.HexToHash(txid))
+	if err == nil {
+		Tx.ContractAddress = *_Tx.To()
+	}
+
 	usdt, isStuck := w.Checklogs(Tx, address)
 	return usdt, isStuck
 }

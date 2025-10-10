@@ -75,7 +75,7 @@ func (s *Service) CheckTx(req *CheckTxRequest) (*CheckTxResponse, error) {
 			"stuck":           true,
 			"received_amount": fmt.Sprintf("%v", amount),
 			// "txid":            fmt.Sprintf("%v", req.TxID),
-			"currency":        string(currency.Name()),
+			"currency": string(currency.Name()),
 		}, address.Callback)
 		s.Box.Delete(req.Address)
 		return &CheckTxResponse{
@@ -112,7 +112,7 @@ func (s *Service) FindLatestTx(req *FindTxRequest) (*CheckTxResponse, error) {
 			"stuck":           true,
 			"received_amount": fmt.Sprintf("%v", amount),
 			// "txid":            "",
-			"currency":        string(currency.Name()),
+			"currency": string(currency.Name()),
 		}, address.Callback)
 		s.Box.Delete(req.Address)
 		return &CheckTxResponse{
