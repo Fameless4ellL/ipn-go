@@ -79,6 +79,7 @@ func (w *ETH) IsTransactionMatch(client *ethclient.Client, url string, address s
 	if *Tx.To() != common.HexToAddress(address) {
 		Tx, err := client.TransactionReceipt(context.Background(), common.HexToHash(txid))
 		if err != nil {
+			logger.Log.Warnf("ETH: Error getting transaction receipt for tx %s: %s", txid, err)
 			return "", false
 		}
 		return w.CheckInternalTxs(url, Tx, address)
@@ -94,10 +95,15 @@ func (w *ETH) IsTransactionMatch(client *ethclient.Client, url string, address s
 
 func (w *ETH) GetLatestTx(client *ethclient.Client, url string, address string) (string, bool) {
 	ScanClient := etherscan.NewClient()
-	resp, err := ScanClient.GetTransactions(address, 0, 99999999, 1, 10, "asc")
+	resp, err := ScanClient.GetTransactions(address, 0, 99999999, 1, 10, "asc", etherscan.InternalTx)
 	if err != nil {
-		logger.Log.Warnf("Error: %v", err)
-		return "", false
+		logger.Log.Warnf("Internal Error: %v", err)
+		resp, err = ScanClient.GetTransactions(address, 0, 99999999, 1, 10, "asc", etherscan.NormalTx)
+		if err != nil {
+			logger.Log.Warnf("Normal Error: %v", err)
+			return "", false
+		}
+		return w.IsTransactionMatch(client, url, address, resp.Result[0].Hash)
 	}
 
 	return w.IsTransactionMatch(client, url, address, resp.Result[0].Hash)

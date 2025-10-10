@@ -28,9 +28,9 @@ func (e *RPCError) Error() string {
 
 func NewManager() *Manager {
 	return &Manager{nodes: []domain.RPCNode{
-		// {URL: "https://eth.drpc.org", Chain: rpc.Ethereum, Healthy: true},                       // has trace_block
+		{URL: "https://eth.drpc.org", Chain: domain.Ethereum, Healthy: true},                       // has trace_block
 		{URL: "https://api.noderpc.xyz/rpc-mainnet/public", Chain: domain.Ethereum, Healthy: true}, // has trace_block
-		{URL: "https://ethereum-public.nodies.app", Chain: domain.Ethereum, Healthy: true},         // has trace_block
+		// {URL: "https://ethereum-public.nodies.app", Chain: domain.Ethereum, Healthy: true},         // has trace_block
 		// {URL: "https://endpoints.omniatech.io/v1/eth/mainnet/public", Chain: rpc.Ethereum, Healthy: true, Processing: false}, // has trace_block
 		// {URL: "https://eth.api.onfinality.io/public", Chain: rpc.Ethereum, Healthy: true, Processing: false}, // has trace_block
 		// {URL: "https://eth.llamarpc.com", Chain: rpc.Ethereum, Healthy: true}, not trace_block

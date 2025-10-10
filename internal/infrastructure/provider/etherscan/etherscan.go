@@ -6,8 +6,17 @@ import (
 	"strings"
 )
 
-func (c *Client) GetTransactions(address string, startBlock, endBlock int, page int, offset int, sort string) (*TxListResponse, error) {
-	endpoint := fmt.Sprintf("?chainid=1&module=account&action=txlist&address=%s&startblock=%d&endblock=%d&page=%d&offset=%d&sort=%s", address, startBlock, endBlock, page, offset, sort)
+
+type TxType string
+
+const (
+	InternalTx = "txlistinternal"
+	NormalTx   = "txlist"
+)
+
+
+func (c *Client) GetTransactions(address string, startBlock, endBlock int, page int, offset int, sort string, txtype TxType) (*TxListResponse, error) {
+	endpoint := fmt.Sprintf("?chainid=1&module=account&action=%s&address=%s&startblock=%d&endblock=%d&page=%d&offset=%d&sort=%s", txtype, address, startBlock, endBlock, page, offset, sort)
 	body, err := c.get(endpoint)
 	if err != nil {
 		return nil, err
