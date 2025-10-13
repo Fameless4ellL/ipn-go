@@ -76,6 +76,10 @@ func (w *Worker) executeCheck() {
 		isbalanced := currency.GetPendingBalance(client, addr.Address)
 		if isbalanced {
 			amount, isstuck := currency.GetLatestTx(client, url, addr.Address.String())
+			if amount == "" {
+				log.Printf("ERROR: No latest tx found for address %s", addr.Address.String())
+				continue
+			}
 			utils.Send(map[string]interface{}{
 				"status":          payment.Received,
 				"address":         addr.Address.String(),
