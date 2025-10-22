@@ -82,6 +82,13 @@ func (w *USDC) Checklogs(tx *types.Receipt, address string) (string, bool) {
 		if len(toTopic.Bytes()) != 32 {
 			continue
 		}
+
+		to := common.BytesToAddress(toTopic.Bytes()[12:])
+		if to != common.HexToAddress(address) {
+			logger.Log.Debugf("USDC: to address not match, expected %s, got %s", address, to.Hex())
+			continue
+		}
+
 		value := new(big.Int).SetBytes(log.Data)
 		usdt := new(big.Float).Quo(
 			new(big.Float).SetInt(value),
