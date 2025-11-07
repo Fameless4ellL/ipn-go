@@ -35,10 +35,10 @@ type JSONRPCResponse struct {
 func TraceBlock(node string, blocknum string) ([]TraceResult, error) {
 	// Prepare the request payload
 	payload := map[string]interface{}{
-		"JSONRPC": "2.0",
-		"Method":  "trace_block",
-		"Params":  []interface{}{blocknum},
-		"ID":      1,
+		"jsonrpc": "2.0",
+		"method":  "trace_block",
+		"params":  []interface{}{blocknum},
+		"id":      1,
 	}
 	resp, err := Callback(node, payload)
 	if err != nil {
