@@ -40,6 +40,10 @@ func (h *Handler) Webhook(c *gin.Context) {
 		return
 	}
 
+	if req.Network == "" {
+		req.Network = string(blockchain.Ethereum)
+	}
+
 	if !common.IsHexAddress(req.Address) {
 		c.JSON(http.StatusBadRequest, InvalidAddress{Error: "Invalid address"})
 		return
@@ -50,6 +54,7 @@ func (h *Handler) Webhook(c *gin.Context) {
 			"status":          domain.Pending,
 			"address":         req.Address,
 			"stuck":           req.Timeout,
+			"network":         req.Network,
 			"received_amount": req.CallbackURL,
 			"currency":        req.Currency,
 		},
@@ -59,6 +64,7 @@ func (h *Handler) Webhook(c *gin.Context) {
 	h.Service.Box.Set(
 		req.Address,
 		uuid.New(),
+		blockchain.ChainType(req.Network),
 		blockchain.CurrencyType(req.Currency),
 		req.CallbackURL,
 		time.Now().Add(time.Duration(req.Timeout)*time.Minute),
@@ -117,6 +123,10 @@ func (h *Handler) CheckTx(c *gin.Context) {
 		return
 	}
 
+	if req.Network == "" {
+		req.Network = string(blockchain.Ethereum)
+	}
+
 	if !common.IsHexAddress(req.Address) {
 		c.JSON(http.StatusUnprocessableEntity, InvalidAddress{Error: "Invalid address"})
 		return
@@ -146,6 +156,10 @@ func (h *Handler) FindLatestTx(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, InvalidRequest{Error: "invalid request"})
 		return
+	}
+
+	if req.Network == "" {
+		req.Network = string(blockchain.Ethereum)
 	}
 
 	if !common.IsHexAddress(req.Address) {

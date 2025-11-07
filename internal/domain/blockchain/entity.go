@@ -3,7 +3,6 @@ package blockchain
 import (
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
 )
 
@@ -12,13 +11,26 @@ type CurrencyType string
 
 const (
 	Ethereum ChainType = "ethereum"
+	Binance  ChainType = "binance"
+	Solana   ChainType = "solana"
+	Litecoin ChainType = "litecoin"
 )
 
 const (
 	ETH  CurrencyType = "ETH"
+	BNB  CurrencyType = "BNB"
 	USDT CurrencyType = "USDT"
+	BUSD CurrencyType = "BUSD"
 	USDC CurrencyType = "USDC"
+	SOL  CurrencyType = "SOL"
+	LTC  CurrencyType = "LTC"
 )
+
+type Chain struct {
+	Id         int
+	Name       ChainType
+	Currencies map[CurrencyType]Currency
+}
 
 type RPCNode struct {
 	URL         string
@@ -29,7 +41,8 @@ type RPCNode struct {
 
 type Address struct {
 	ID       uuid.UUID
-	Address  common.Address
+	Address  string
+	Network  ChainType
 	Currency CurrencyType
 	Callback string
 	Timeout  time.Time

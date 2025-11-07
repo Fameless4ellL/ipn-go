@@ -17,6 +17,7 @@ var (
 	Verbose          bool
 	BalanceTolerance = 0.01
 	ETHapiKey        string
+	SOLapiKey        string
 )
 
 func Init() {
@@ -35,4 +36,5 @@ func Init() {
 	Verbose, _ = strconv.ParseBool(os.Getenv("VERBOSE"))
 	BalanceTolerance, _ = strconv.ParseFloat(os.Getenv("BALANCE_TOLERANCE"), 64)
 	ETHapiKey = os.Getenv("ETHERSCAN_API_KEY")
+	// SOLapiKey := os.Getenv("SOLANA_API_KEY")
 }

@@ -59,7 +59,7 @@ func main() {
 	db := database.New()
 	repo := repository.NewRepository(db)
 	manager := rpc.NewManager()
-	watcher := blockchain.NewCurrencyWatcherRegistry()
+	watcher := blockchain.NewCurrencyWatcherRegistry(manager)
 
 	service := application.NewService(repo, manager, watcher, box)
 	h := handler.NewRepository(service)
@@ -67,11 +67,6 @@ func main() {
 	router := server.RegisterRoutes(h)
 	srv := server.NewServer(router)
 	go gracefulShutdown(srv, done)
-
-	// old algorithm (deprecated)
-	// storage.InitStores() // Initialize the global stores, including payment
-	// blocker.Start(service)
-	// worker.Start(service)
 
 	work := worker.NewWorker(service, 10*time.Second)
 	ctx, cancel := context.WithCancel(context.Background())

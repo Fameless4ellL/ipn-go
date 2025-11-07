@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-
 type TxType string
 
 const (
@@ -14,9 +13,8 @@ const (
 	NormalTx   = "txlist"
 )
 
-
 func (c *Client) GetTransactions(address string, startBlock, endBlock int, page int, offset int, sort string, txtype TxType) (*TxListResponse, error) {
-	endpoint := fmt.Sprintf("?chainid=1&module=account&action=%s&address=%s&startblock=%d&endblock=%d&page=%d&offset=%d&sort=%s", txtype, address, startBlock, endBlock, page, offset, sort)
+	endpoint := fmt.Sprintf("?chainid=%s&module=account&action=%s&address=%s&startblock=%d&endblock=%d&page=%d&offset=%d&sort=%s", c.ChainID, txtype, address, startBlock, endBlock, page, offset, sort)
 	body, err := c.get(endpoint)
 	if err != nil {
 		return nil, err
@@ -34,7 +32,7 @@ func (c *Client) GetTransactions(address string, startBlock, endBlock int, page 
 }
 
 func (c *Client) GetERC20(contractaddress string, address string, startBlock, endBlock int, page int, offset int, sort string) (*TxListResponse, error) {
-	endpoint := fmt.Sprintf("?chainid=1&module=account&action=tokentx&contractaddress=%s&address=%s&startblock=%d&endblock=%d&page=%d&offset=%d&sort=%s", strings.ToLower(contractaddress), strings.ToLower(address), startBlock, endBlock, page, offset, sort)
+	endpoint := fmt.Sprintf("?chainid=%s&module=account&action=tokentx&contractaddress=%s&address=%s&startblock=%d&endblock=%d&page=%d&offset=%d&sort=%s", c.ChainID, strings.ToLower(contractaddress), strings.ToLower(address), startBlock, endBlock, page, offset, sort)
 	body, err := c.get(endpoint)
 	if err != nil {
 		return nil, err

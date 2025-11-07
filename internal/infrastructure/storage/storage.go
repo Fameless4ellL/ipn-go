@@ -7,7 +7,6 @@ import (
 
 	blockchain "go-blocker/internal/domain/blockchain"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
 )
 
@@ -31,6 +30,7 @@ func NewAddressStore() *AddressStore {
 func (s *AddressStore) Set(
 	address string,
 	id uuid.UUID,
+	n blockchain.ChainType,
 	c blockchain.CurrencyType,
 	callback string,
 	timeout time.Time,
@@ -40,7 +40,8 @@ func (s *AddressStore) Set(
 	s.store[strings.ToLower(address)] = blockchain.Address{
 		ID:       id,
 		Currency: c,
-		Address:  common.HexToAddress(address),
+		Network:  n,
+		Address:  address,
 		Callback: callback,
 		Timeout:  timeout,
 	}

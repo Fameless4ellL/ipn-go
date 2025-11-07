@@ -56,26 +56,20 @@ func (s *Service) ListPendingPayments() ([]*payment.Payment, error) {
 }
 
 func (s *Service) CheckTx(req *CheckTxRequest) (*CheckTxResponse, error) {
-	client, url, err := s.Manager.GetClientForChain(blockchain.Ethereum)
-	if err != nil {
-		return nil, err
-	}
-
-	currency, err := s.Provider.GetWatcher(blockchain.Ethereum, blockchain.CurrencyType(req.Currency))
+	currency, err := s.Provider.GetWatcher(blockchain.ChainType(req.Network), blockchain.CurrencyType(req.Currency))
 	if err != nil {
 		return nil, err
 	}
 
 	address, _ := s.Box.Get(req.Address)
-	amount, IsStuck := currency.IsTransactionMatch(client, url, req.Address, req.TxID)
+	amount, IsStuck := currency.IsTransactionMatch(req.Address, req.TxID)
 	if IsStuck {
 		utils.Send(map[string]interface{}{
 			"status":          payment.Received,
 			"address":         req.Address,
 			"stuck":           true,
 			"received_amount": fmt.Sprintf("%v", amount),
-			// "txid":            fmt.Sprintf("%v", req.TxID),
-			"currency": string(currency.Name()),
+			"currency": string(currency.GetName()),
 		}, address.Callback)
 		s.Box.Delete(req.Address)
 		return &CheckTxResponse{
@@ -92,27 +86,21 @@ func (s *Service) CheckTx(req *CheckTxRequest) (*CheckTxResponse, error) {
 }
 
 func (s *Service) FindLatestTx(req *FindTxRequest) (*CheckTxResponse, error) {
-	client, url, err := s.Manager.GetClientForChain(blockchain.Ethereum)
-	if err != nil {
-		return nil, err
-	}
-
-	currency, err := s.Provider.GetWatcher(blockchain.Ethereum, blockchain.CurrencyType(req.Currency))
+	currency, err := s.Provider.GetWatcher(blockchain.ChainType(req.Network), blockchain.CurrencyType(req.Currency))
 	if err != nil {
 		return nil, err
 	}
 
 	address, _ := s.Box.Get(req.Address)
 
-	amount, IsStuck := currency.GetLatestTx(client, url, req.Address)
+	amount, IsStuck := currency.GetLatestTx(req.Address)
 	if IsStuck {
 		utils.Send(map[string]interface{}{
 			"status":          payment.Received,
 			"address":         req.Address,
 			"stuck":           true,
 			"received_amount": fmt.Sprintf("%v", amount),
-			// "txid":            "",
-			"currency": string(currency.Name()),
+			"currency":        string(currency.GetName()),
 		}, address.Callback)
 		s.Box.Delete(req.Address)
 		return &CheckTxResponse{

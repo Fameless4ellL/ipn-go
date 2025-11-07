@@ -28,15 +28,10 @@ func (e *RPCError) Error() string {
 
 func NewManager() *Manager {
 	return &Manager{nodes: []domain.RPCNode{
-		{URL: "https://eth.drpc.org", Chain: domain.Ethereum, Healthy: true},                       // has trace_block
-		{URL: "https://api.noderpc.xyz/rpc-mainnet/public", Chain: domain.Ethereum, Healthy: true}, // has trace_block
-		// {URL: "https://ethereum-public.nodies.app", Chain: domain.Ethereum, Healthy: true},         // has trace_block
-		// {URL: "https://endpoints.omniatech.io/v1/eth/mainnet/public", Chain: rpc.Ethereum, Healthy: true, Processing: false}, // has trace_block
-		// {URL: "https://eth.api.onfinality.io/public", Chain: rpc.Ethereum, Healthy: true, Processing: false}, // has trace_block
-		// {URL: "https://eth.llamarpc.com", Chain: rpc.Ethereum, Healthy: true}, not trace_block
-		// {URL: "https://ethereum-rpc.publicnode.com", Chain: rpc.Ethereum, Healthy: true}, // not trace_block
-		// {URL: "https://go.getblock.io/aefd01aa907c4805ba3c00a9e5b48c6b", Chain: rpc.Ethereum, Healthy: true}, too many requests and no support for trace_block
-		// {URL: "https://sepolia.drpc.org", Chain: rpc.Ethereum, Healthy: true}, // test
+		{URL: "https://eth.drpc.org", Chain: domain.Ethereum, Healthy: true},
+		{URL: "https://api.mainnet-beta.solana.com", Chain: domain.Solana, Healthy: true},
+		{URL: "https://bsc.drpc.org", Chain: domain.Binance, Healthy: true},
+		{URL: "https://solana.drpc.org", Chain: domain.Solana, Healthy: true},
 	}}
 }
 

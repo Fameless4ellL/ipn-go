@@ -8,12 +8,14 @@ import (
 )
 
 type Client struct {
+	ChainID string
 	APIKey  string
 	BaseURL string
 }
 
-func NewClient() *Client {
+func NewClient(ChainID string) *Client {
 	return &Client{
+		ChainID: ChainID,
 		APIKey:  config.ETHapiKey,
 		BaseURL: "https://api.etherscan.io/v2/api",
 	}

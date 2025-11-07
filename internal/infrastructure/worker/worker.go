@@ -7,7 +7,6 @@ import (
 	"time"
 
 	application "go-blocker/internal/application/payment"
-	blockchain "go-blocker/internal/domain/blockchain"
 	"go-blocker/internal/infrastructure/payment"
 	"go-blocker/internal/pkg/utils"
 )
@@ -46,48 +45,44 @@ func (w *Worker) Start(ctx context.Context) {
 func (w *Worker) executeCheck() {
 	addresses := w.Service.Box.List()
 
-	client, url, err := w.Service.Manager.GetClientForChain(blockchain.Ethereum)
-	if err != nil {
-		log.Printf("ERROR: No healthy RPC nodes for Ethereum: %v", err)
-		return
-	}
-
 	for _, addr := range addresses {
 		if addr.Timeout.Before(time.Now()) {
-			log.Printf("INFO: Skipping address %s due to timeout", addr.Address.String())
+			log.Printf("INFO: Skipping address %s due to timeout", addr.Address)
 			utils.Send(map[string]interface{}{
 				"status":          payment.Timeout,
-				"address":         addr.Address.String(),
+				"address":         addr.Address,
 				"stuck":           true,
 				"received_amount": "0",
-				// "txid":            "",
-				"currency": string(addr.Currency),
+				"network":         string(addr.Network),
+				"currency":        string(addr.Currency),
 			}, addr.Callback)
-			w.Service.Box.Delete(addr.Address.String())
+			w.Service.Box.Delete(addr.Address)
 			continue
 		}
 
-		currency, err := w.Service.Provider.GetWatcher(blockchain.Ethereum, addr.Currency)
+		currency, err := w.Service.Provider.GetWatcher(addr.Network, addr.Currency)
 		if err != nil {
-			log.Printf("ERROR: No watcher for currency %s: %v", addr.Currency, err)
-			w.Service.Box.Delete(addr.Address.String())
+			log.Printf("ERROR: No watcher for %s: %v", addr.Currency, err)
+			w.Service.Box.Delete(addr.Address)
 			continue
 		}
-		isbalanced := currency.GetPendingBalance(client, addr.Address)
+
+		isbalanced := currency.GetPendingBalance(addr.Address)
 		if isbalanced {
-			amount, isstuck := currency.GetLatestTx(client, url, addr.Address.String())
+			amount, isstuck := currency.GetLatestTx(addr.Address)
 			if amount == "" {
-				log.Printf("ERROR: No latest tx found for address %s", addr.Address.String())
+				log.Printf("ERROR: No latest tx found for address %s", addr.Address)
 				continue
 			}
 			utils.Send(map[string]interface{}{
 				"status":          payment.Received,
-				"address":         addr.Address.String(),
+				"address":         addr.Address,
 				"stuck":           isstuck,
 				"received_amount": fmt.Sprintf("%v", amount),
-				"currency":        string(currency.Name()),
+				"network":         string(addr.Network),
+				"currency":        string(currency.GetName()),
 			}, addr.Callback)
-			w.Service.Box.Delete(addr.Address.String())
+			w.Service.Box.Delete(addr.Address)
 		}
 
 		time.Sleep(1 * time.Second) // Avoid rate limiting

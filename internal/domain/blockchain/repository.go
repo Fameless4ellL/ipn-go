@@ -1,9 +1,11 @@
 package blockchain
 
 import (
+	"go-blocker/internal/pkg/utils"
+	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/google/uuid"
 )
@@ -17,18 +19,26 @@ type Watcher interface {
 }
 
 type Currency interface {
-	Name() string
-	Chain() string
-	Decimals() int
-	GetPendingBalance(client *ethclient.Client, wallet common.Address) bool
-	IsTransactionMatch(client *ethclient.Client, url string, address string, txid string) (string, bool)
-	GetLatestTx(client *ethclient.Client, url string, address string) (string, bool)
+	GetName() CurrencyType
+	GetPendingBalance(wallet string) bool
+	IsTransactionMatch(address, txid string) (string, bool)
+	GetLatestTx(address string) (string, bool)
+}
+
+type API interface {
+	GetERC20Balance(abi, wallet string) *big.Int
+	GetERC20(contract, address string) (string, error)
+	GetTx(address string) (string, error)
+	GetBalance(wallet string) *big.Int
+	TraceBlock(Tx *types.Receipt, address string) ([]utils.TraceResult, error)
+	TransactionByHash(txid string) (*types.Transaction, error)
+	TransactionReceipt(txid string) (*types.Receipt, error)
 }
 
 type Storage interface {
 	List() []Address
 	Len() int
-	Set(address string, id uuid.UUID, c CurrencyType, callback string, timeout time.Time)
+	Set(address string, id uuid.UUID, n ChainType, c CurrencyType, callback string, timeout time.Time)
 	Get(string) (Address, bool)
 	Delete(address string)
 }
