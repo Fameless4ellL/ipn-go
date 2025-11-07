@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	application "go-blocker/internal/application/payment"
 	"go-blocker/internal/infrastructure/telegram/handlers"
 	"go-blocker/internal/pkg/config"
 	"log"
@@ -9,7 +10,7 @@ import (
 	tele "gopkg.in/telebot.v4"
 )
 
-func Init() {
+func Init(s *application.Service) {
 	pref := tele.Settings{
 		Token:  config.BotToken,
 		Poller: &tele.LongPoller{Timeout: 10 * time.Second},
@@ -21,13 +22,11 @@ func Init() {
 		return
 	}
 
-	// db := database.New()
-	// repo := database.NewPaymentRepository(db)
-	// service := payment.NewPaymentService(repo)
+	hand := handlers.NewTGHandler(s)
 
-	b.Handle("/healthcheck", handlers.HealthCheck)
-	b.Handle("/checktx", handlers.CheckTx)
-	b.Handle("/findtx", handlers.FindTx)
+	b.Handle("/healthcheck2", handlers.HealthCheck)
+	b.Handle("/check", hand.CheckTx)
+	b.Handle("/find", hand.FindTx)
 	b.Handle("/SetChatID", handlers.SetChatID)
 	go b.Start()
 }

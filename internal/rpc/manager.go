@@ -29,6 +29,7 @@ func (e *RPCError) Error() string {
 func NewManager() *Manager {
 	return &Manager{nodes: []domain.RPCNode{
 		{URL: "https://eth.drpc.org", Chain: domain.Ethereum, Healthy: true},
+		{URL: "https://ethereum-rpc.publicnode.com", Chain: domain.Ethereum, Healthy: true},
 		{URL: "https://api.mainnet-beta.solana.com", Chain: domain.Solana, Healthy: true},
 		{URL: "https://bsc.drpc.org", Chain: domain.Binance, Healthy: true},
 		{URL: "https://solana.drpc.org", Chain: domain.Solana, Healthy: true},

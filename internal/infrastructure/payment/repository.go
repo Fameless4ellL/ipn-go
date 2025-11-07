@@ -50,14 +50,6 @@ func (r *Repository) UpdateStatus(
 	p.Status = status
 	model := FromDomain(p)
 
-	if receivedAmount != nil {
-		updates["received_amount"] = *receivedAmount
-		p.ReceivedAmount = *receivedAmount
-	}
-	if txID != nil {
-		updates["TxID"] = *txID
-		p.TxID = *txID
-	}
 	if isContractMatch != nil {
 		updates["IsStuck"] = *isContractMatch
 		p.IsStuck = *isContractMatch
@@ -103,14 +95,18 @@ func (r *Repository) ExpireWhere(condition func(*domain.Payment) bool) error {
 	return nil
 }
 
-func (r *Repository) ListPending() ([]*domain.Payment, error) {
+func (r *Repository) List() ([]*domain.Payment, error) {
 	var models []PaymentModel
-	err := r.db.Where("status = ?", "pending").Find(&models).Error
+	err := r.db.Find(&models).Error
 	domainPayments := make([]*domain.Payment, len(models))
 	for i, model := range models {
 		domainPayments[i] = model.ToDomain()
 	}
 	return domainPayments, err
+}
+
+func (r *Repository) Delete(id uuid.UUID) {
+	r.db.Delete(&PaymentModel{}, "id = ?", id)
 }
 
 func (s *Repository) isBalanceSufficient(balance *big.Float, expected string) bool {

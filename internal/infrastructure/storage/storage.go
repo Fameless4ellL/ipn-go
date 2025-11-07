@@ -17,10 +17,6 @@ type AddressStore struct {
 
 var PaymentAddressStore *AddressStore
 
-func InitStores() {
-	PaymentAddressStore = NewAddressStore()
-}
-
 func NewAddressStore() *AddressStore {
 	return &AddressStore{
 		store: make(map[string]blockchain.Address),

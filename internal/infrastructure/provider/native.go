@@ -63,7 +63,7 @@ func (w *Native[T]) IsTransactionMatch(address string, txid string) (string, boo
 	if *Tx.To() != common.HexToAddress(address) {
 		Tx, err := w.client.TransactionReceipt(txid)
 		if err != nil {
-			logger.Log.Warnf("[%s]: Error getting transaction receipt for tx %s: %s", txid, err)
+			logger.Log.Warnf("[%s]: Error getting transaction receipt for tx %s: %s", w.Name, txid, err)
 			return "", false
 		}
 		return w.CheckInternalTxs(Tx, address)

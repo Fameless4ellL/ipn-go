@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	application "go-blocker/internal/application/payment"
+	domain "go-blocker/internal/domain/blockchain"
 	repository "go-blocker/internal/infrastructure/payment"
 	blockchain "go-blocker/internal/infrastructure/provider"
 	storage "go-blocker/internal/infrastructure/storage"
@@ -19,6 +20,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func gracefulShutdown(apiServer *http.Server, done chan bool) {
@@ -53,15 +56,17 @@ func main() {
 
 	// Run graceful shutdown in a separate goroutine
 
-	telegram.Init()
-	box := storage.NewAddressStore()
-
 	db := database.New()
 	repo := repository.NewRepository(db)
 	manager := rpc.NewManager()
 	watcher := blockchain.NewCurrencyWatcherRegistry(manager)
 
+	box := storage.NewAddressStore()
+
 	service := application.NewService(repo, manager, watcher, box)
+
+	telegram.Init(service)
+
 	h := handler.NewRepository(service)
 
 	router := server.RegisterRoutes(h)
@@ -72,6 +77,18 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go work.Start(ctx)
+
+	addresses, _ := service.Repo.List()
+	for _, addr := range addresses {
+		box.Set(
+			addr.Address,
+			uuid.UUID(addr.ID),
+			domain.ChainType(addr.Network),
+			domain.CurrencyType(addr.Currency),
+			addr.CallbackURL,
+			time.Now().Add(time.Duration(addr.Timeout)*time.Minute),
+		)
+	}
 
 	err := srv.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {

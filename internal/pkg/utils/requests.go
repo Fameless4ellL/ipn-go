@@ -54,13 +54,20 @@ func Telegram(payload map[string]interface{}, chatid string) {
 
 	// Format message
 	message := fmt.Sprintf(
-		"💸 Payment Status\nStatus: %v\nAddress: %v\nAmount: %v\nCurrency: %v\nStuck: %v\n",
+		"💸 Payment Status\nStatus: %v\nAddress: %v\nAmount: %v\nCurrency: %v\n",
 		payload["status"],
 		payload["address"],
 		payload["received_amount"],
 		payload["currency"],
-		payload["stuck"],
 	)
+
+	if network, ok := payload["network"]; ok {
+		message += fmt.Sprintf("Network: %v\n", network)
+	}
+
+	if _, ok := payload["stuck"]; ok && payload["stuck"] == true {
+		message += "⚠️ This payment was marked as stuck.\n"
+	}
 
 	// Telegram API endpoint
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", config.BotToken)

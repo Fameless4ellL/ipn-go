@@ -20,21 +20,19 @@ const (
 )
 
 type Payment struct {
-	ID             ID
-	Address        string
-	Currency       string
-	Amount         string
-	Timeout        int
-	ReceivedAmount string
-	TxID           string
-	CallbackURL    string
-	Status         Status
-	IsStuck        bool
-	CreatedAt      time.Time
-	ExpiresAt      time.Time
+	ID          ID
+	Address     string
+	Network     string
+	Currency    string
+	Amount      string
+	Timeout     int
+	CallbackURL string
+	Status      Status
+	IsStuck     bool
+	CreatedAt   time.Time
 }
 
-func NewPayment(address, currency, amount string, timeoutMinutes int, callback string) (*Payment, error) {
+func NewPayment(address, network, currency, amount string, timeoutMinutes int, callback string) (*Payment, error) {
 	if address == "" || amount == "" {
 		return nil, errors.New("address and amount are required")
 	}
@@ -42,13 +40,13 @@ func NewPayment(address, currency, amount string, timeoutMinutes int, callback s
 	p := &Payment{
 		ID:          ID(uuid.New()),
 		Address:     address,
+		Network:     network,
 		Currency:    currency,
 		Amount:      amount,
 		Timeout:     timeoutMinutes,
 		CallbackURL: callback,
 		Status:      Pending,
 		CreatedAt:   time.Now(),
-		ExpiresAt:   time.Now().Add(time.Duration(timeoutMinutes) * time.Minute),
 	}
 	return p, nil
 }

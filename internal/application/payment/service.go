@@ -6,7 +6,6 @@ import (
 	blockchain "go-blocker/internal/domain/blockchain"
 	payment "go-blocker/internal/domain/payment"
 	"go-blocker/internal/pkg/utils"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -28,7 +27,7 @@ func NewService(
 }
 
 func (s *Service) Create(p *WebhookRequest) (*payment.Payment, error) {
-	pay, err := payment.NewPayment(p.Address, p.Currency, "0", p.Timeout, p.CallbackURL)
+	pay, err := payment.NewPayment(p.Address, p.Network, p.Currency, "0", p.Timeout, p.CallbackURL)
 	if err != nil {
 		return nil, err
 	}
@@ -45,14 +44,8 @@ func (s *Service) Status(
 	return s.Repo.UpdateStatus(id, status, receivedAmount, txID, isContractMatch)
 }
 
-func (s *Service) ExpireTimedOutPayments() error {
-	return s.Repo.ExpireWhere(func(p *payment.Payment) bool {
-		return p.Status == payment.Pending && time.Now().After(p.ExpiresAt)
-	})
-}
-
 func (s *Service) ListPendingPayments() ([]*payment.Payment, error) {
-	return s.Repo.ListPending()
+	return s.Repo.List()
 }
 
 func (s *Service) CheckTx(req *CheckTxRequest) (*CheckTxResponse, error) {
@@ -69,9 +62,10 @@ func (s *Service) CheckTx(req *CheckTxRequest) (*CheckTxResponse, error) {
 			"address":         req.Address,
 			"stuck":           true,
 			"received_amount": fmt.Sprintf("%v", amount),
-			"currency": string(currency.GetName()),
+			"currency":        string(currency.GetName()),
 		}, address.Callback)
 		s.Box.Delete(req.Address)
+		s.Repo.Delete(address.ID)
 		return &CheckTxResponse{
 			Status: payment.Received,
 			Amount: amount,
@@ -100,9 +94,11 @@ func (s *Service) FindLatestTx(req *FindTxRequest) (*CheckTxResponse, error) {
 			"address":         req.Address,
 			"stuck":           true,
 			"received_amount": fmt.Sprintf("%v", amount),
+			"network":         req.Network,
 			"currency":        string(currency.GetName()),
 		}, address.Callback)
 		s.Box.Delete(req.Address)
+		s.Repo.Delete(address.ID)
 		return &CheckTxResponse{
 			Status: payment.Received,
 			Amount: amount,

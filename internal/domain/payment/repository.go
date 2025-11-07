@@ -7,5 +7,6 @@ type Repository interface {
 	FindByID(id uuid.UUID) (*Payment, error)
 	UpdateStatus(id uuid.UUID, status Status, receivedAmount *string, txID *string, isContractMatch *bool) error
 	ExpireWhere(predicate func(p *Payment) bool) error
-	ListPending() ([]*Payment, error)
+	Delete(id uuid.UUID)
+	List() ([]*Payment, error)
 }

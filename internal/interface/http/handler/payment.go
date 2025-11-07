@@ -69,6 +69,7 @@ func (h *Handler) Webhook(c *gin.Context) {
 		req.CallbackURL,
 		time.Now().Add(time.Duration(req.Timeout)*time.Minute),
 	)
+	h.Service.Create(&req)
 	c.JSON(http.StatusOK, gin.H{"status": "webhook settled"})
 }
 
@@ -94,12 +95,9 @@ func (h *Handler) Status(c *gin.Context) {
 		"id":            payment.ID,
 		"status":        payment.Status,
 		"amount":        payment.Amount,
-		"actual_amount": payment.ReceivedAmount,
 		"currency":      payment.Currency,
 		"address":       payment.Address,
 		"created_at":    payment.CreatedAt,
-		"expires_at":    payment.ExpiresAt,
-		"txid":          payment.TxID,
 		"stuck":         payment.IsStuck,
 		"callback_url":  payment.CallbackURL,
 	})

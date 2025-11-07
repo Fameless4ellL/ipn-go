@@ -8,6 +8,7 @@ import (
 
 	application "go-blocker/internal/application/payment"
 	"go-blocker/internal/infrastructure/payment"
+	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/pkg/utils"
 )
 
@@ -46,6 +47,8 @@ func (w *Worker) executeCheck() {
 	addresses := w.Service.Box.List()
 
 	for _, addr := range addresses {
+		logger.Log.Debugf("Checking address: %s", addr.Address)
+
 		if addr.Timeout.Before(time.Now()) {
 			log.Printf("INFO: Skipping address %s due to timeout", addr.Address)
 			utils.Send(map[string]interface{}{
@@ -57,6 +60,7 @@ func (w *Worker) executeCheck() {
 				"currency":        string(addr.Currency),
 			}, addr.Callback)
 			w.Service.Box.Delete(addr.Address)
+			w.Service.Repo.Delete(addr.ID)
 			continue
 		}
 
@@ -64,6 +68,7 @@ func (w *Worker) executeCheck() {
 		if err != nil {
 			log.Printf("ERROR: No watcher for %s: %v", addr.Currency, err)
 			w.Service.Box.Delete(addr.Address)
+			w.Service.Repo.Delete(addr.ID)
 			continue
 		}
 
@@ -83,6 +88,7 @@ func (w *Worker) executeCheck() {
 				"currency":        string(currency.GetName()),
 			}, addr.Callback)
 			w.Service.Box.Delete(addr.Address)
+			w.Service.Repo.Delete(addr.ID)
 		}
 
 		time.Sleep(1 * time.Second) // Avoid rate limiting
