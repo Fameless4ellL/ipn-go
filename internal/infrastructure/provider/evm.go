@@ -31,28 +31,44 @@ func (evm *EVM) GetBalance(wallet string) *big.Int {
 	return balance
 }
 
-func (evm *EVM) GetERC20Balance(abi string, wallet string) *big.Int {
+func (evm *EVM) GetERC20Balance(abi, contract, wallet string) *big.Int {
 	address := common.HexToAddress(wallet)
+	contractAddr := common.HexToAddress(contract)
+
 	parsedABI, err := ABI.JSON(strings.NewReader(abi))
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Fatalf("JSON %v", err)
 	}
 
-	data, err := parsedABI.Pack("balanceOf", wallet)
+	data, err := parsedABI.Pack("balanceOf", address)
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Fatalf("Pack %v", err)
 	}
 
 	msg := ethereum.CallMsg{
-		To:   &address,
+		To:   &contractAddr,
 		Data: data,
 	}
 
 	result, err := evm.client.CallContract(context.Background(), msg, nil)
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Fatalf("CallContract %v", err)
 	}
 
+	// Unpack returns []interface{} for output parameters
+	out, err := parsedABI.Unpack("balanceOf", result)
+	if err == nil && len(out) > 0 {
+		switch v := out[0].(type) {
+		case *big.Int:
+			return v
+		case big.Int:
+			b := new(big.Int)
+			b.Set(&v)
+			return b
+		}
+	}
+
+	// Fallback: try UnpackIntoInterface
 	var balance *big.Int
 	err = parsedABI.UnpackIntoInterface(&balance, "balanceOf", result)
 	if err != nil {

@@ -26,7 +26,7 @@ type Currency interface {
 }
 
 type API interface {
-	GetERC20Balance(abi, wallet string) *big.Int
+	GetERC20Balance(abi, contract, wallet string) *big.Int
 	GetERC20(contract, address string) (string, error)
 	GetTx(address string) (string, error)
 	GetBalance(wallet string) *big.Int
