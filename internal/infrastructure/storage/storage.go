@@ -15,8 +15,6 @@ type AddressStore struct {
 	store map[string]blockchain.Address
 }
 
-var PaymentAddressStore *AddressStore
-
 func NewAddressStore() *AddressStore {
 	return &AddressStore{
 		store: make(map[string]blockchain.Address),
@@ -54,12 +52,6 @@ func (s *AddressStore) Delete(address string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.store, strings.ToLower(address))
-}
-
-func (s *AddressStore) Len() int {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return len(s.store)
 }
 
 func (s *AddressStore) List() []blockchain.Address {

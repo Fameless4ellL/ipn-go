@@ -68,10 +68,6 @@ func (r *Repository) UpdateStatus(
 		}
 	}
 
-	if model.Status != Pending && model.Status != Received {
-		storage.PaymentAddressStore.Delete(p.Address)
-	}
-
 	utils.Send(model.MakePayload(), p.CallbackURL)
 
 	return r.db.Model(&PaymentModel{}).
