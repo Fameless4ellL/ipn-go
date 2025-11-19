@@ -1,9 +1,10 @@
-package balancechecker
+package worker
 
 import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	application "go-blocker/internal/application/payment"
@@ -13,6 +14,7 @@ import (
 )
 
 type Worker struct {
+	mu       sync.Mutex
 	Service  *application.Service
 	Interval time.Duration
 }
@@ -30,7 +32,6 @@ func (w *Worker) Start(ctx context.Context) {
 	defer ticker.Stop()
 
 	log.Println("Address tracker started.")
-	w.executeCheck() // Initial run
 
 	for {
 		select {
@@ -38,7 +39,12 @@ func (w *Worker) Start(ctx context.Context) {
 			log.Println("Address tracker stopped.")
 			return
 		case <-ticker.C:
-			w.executeCheck()
+			go func() {
+				if w.mu.TryLock() {
+					defer w.mu.Unlock()
+					w.executeCheck()
+				}
+			}()
 		}
 	}
 }
