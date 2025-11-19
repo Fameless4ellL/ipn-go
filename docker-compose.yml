@@ -11,7 +11,7 @@ services:
       - ${PORT:-8080}:${PORT:-8080}
     env_file: .env
     volumes:
-      - sqlite_bp:/app/db
+      - sqlite_bp:/app
 
 volumes:
   sqlite_bp:
