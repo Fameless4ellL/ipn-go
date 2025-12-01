@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-blocker/internal/domain/blockchain"
 	"go-blocker/internal/infrastructure/provider/etherscan"
+	"go-blocker/internal/infrastructure/provider/solana"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -34,6 +35,11 @@ func NewCurrencyWatcherRegistry(m blockchain.Manager) *Registry {
 		client: client,
 		scan:   etherscan.NewClient("56"),
 		url:    url,
+	}
+
+	sol := &SOL{
+		client: solana.NewRPC(""),
+		scan:   solana.NewClient(),
 	}
 
 	return &Registry{
@@ -81,6 +87,22 @@ func NewCurrencyWatcherRegistry(m blockchain.Manager) *Registry {
 						Name:     blockchain.BUSD,
 						Address:  common.HexToAddress("0x55d398326f99059fF775485246999027B3197955"),
 						Decimals: 18,
+					},
+				},
+			},
+			blockchain.Solana: {
+				Id:   0,
+				Name: blockchain.Solana,
+				Currencies: map[blockchain.CurrencyType]blockchain.Currency{
+					blockchain.SOL: &Native[blockchain.API]{
+						client:   sol,
+						Name:     blockchain.SOL,
+						Decimals: 9,
+					},
+					blockchain.USDC: &ERC20[blockchain.API]{
+						client:   sol,
+						Name:     blockchain.SOL,
+						Decimals: 9,
 					},
 				},
 			},

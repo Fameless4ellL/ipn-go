@@ -5,9 +5,6 @@ import (
 	logger "go-blocker/internal/pkg/log"
 	"math/big"
 	"strings"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 type Native[T blockchain.API] struct {
@@ -27,14 +24,18 @@ func (w *Native[T]) GetPendingBalance(wallet string) bool {
 	return Balance.Cmp(total) > 0
 }
 
-func (w *Native[T]) CheckInternalTxs(Tx *types.Receipt, address string) (string, bool) {
-	result, err := w.client.TraceBlock(Tx, address)
+func (w *Native[T]) CheckInternalTxs(Tx *blockchain.Transaction, address string) (string, bool) {
+	blocknumberInt := new(big.Int)
+	blocknumberInt.SetString(Tx.BlockNumber.String(), 10)
+	blocknumberHex := blocknumberInt.Text(16)
+
+	result, err := w.client.TraceBlock(blocknumberHex, address)
 	if err != nil {
 		logger.Log.Debugf("[%s]: %s", w.Name, err)
 		return "", false
 	}
 	for _, tx := range result {
-		if Tx.TxHash.Hex() != tx.TransactionHash {
+		if !strings.EqualFold(Tx.Hash, tx.TransactionHash) {
 			continue
 		}
 		if !strings.EqualFold(tx.Action.To, address) {
@@ -60,7 +61,7 @@ func (w *Native[T]) IsTransactionMatch(address string, txid string) (string, boo
 		return "", false
 	}
 
-	if *Tx.To() != common.HexToAddress(address) {
+	if !strings.EqualFold(Tx.ContractAddress, address) {
 		Tx, err := w.client.TransactionReceipt(txid)
 		if err != nil {
 			logger.Log.Warnf("[%s]: Error getting transaction receipt for tx %s: %s", w.Name, txid, err)
@@ -69,10 +70,8 @@ func (w *Native[T]) IsTransactionMatch(address string, txid string) (string, boo
 		return w.CheckInternalTxs(Tx, address)
 	}
 
-	wei := Tx.Value()
-	eth := new(big.Float).Quo(new(big.Float).SetInt(wei), big.NewFloat(1e18)).Text('f', 18)
-
-	logger.Log.Infof("[%s]: Incoming transaction %s, Amount: %s", w.Name, Tx.Hash().Hex(), eth)
+	eth := new(big.Float).Quo(new(big.Float).SetInt(Tx.Value), big.NewFloat(1e18)).Text('f', 18)
+	logger.Log.Infof("[%s]: Incoming transaction %s, Amount: %s", w.Name, Tx.Hash, eth)
 
 	return eth, false
 }

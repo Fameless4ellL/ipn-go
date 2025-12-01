@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"go-blocker/internal/domain/blockchain"
 	"go-blocker/internal/infrastructure/provider/etherscan"
 	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/pkg/utils"
@@ -12,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum"
 	ABI "github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
@@ -77,11 +77,8 @@ func (evm *EVM) GetERC20Balance(abi, contract, wallet string) *big.Int {
 	return balance
 }
 
-func (evm *EVM) TraceBlock(Tx *types.Receipt, address string) ([]utils.TraceResult, error) {
-	blocknumberInt := new(big.Int)
-	blocknumberInt.SetString(Tx.BlockNumber.String(), 10)
-	blocknumberHex := blocknumberInt.Text(16)
-	result, err := utils.TraceBlock(evm.url, "0x"+blocknumberHex)
+func (evm *EVM) TraceBlock(blocknumber, address string) ([]utils.TraceResult, error) {
+	result, err := utils.TraceBlock(evm.url, "0x"+blocknumber)
 	if err != nil {
 		logger.Log.Debugf("No healthy TraceBlock: %s", err)
 		return result, err
@@ -89,21 +86,45 @@ func (evm *EVM) TraceBlock(Tx *types.Receipt, address string) ([]utils.TraceResu
 	return result, nil
 }
 
-func (evm *EVM) TransactionByHash(txid string) (*types.Transaction, error) {
+func (evm *EVM) TransactionByHash(txid string) (*blockchain.Transaction, error) {
 	Tx, _, err := evm.client.TransactionByHash(context.Background(), common.HexToHash(txid))
 	if err != nil {
 		return nil, err
 	}
-	return Tx, nil
+
+	return &blockchain.Transaction{
+		BlockNumber:     nil,
+		ContractAddress: Tx.To().String(),
+		Hash:            Tx.Hash().Hex(),
+		Logs:            []*blockchain.Logs{},
+		Value:           Tx.Value(),
+	}, nil
 }
 
-func (evm *EVM) TransactionReceipt(txid string) (*types.Receipt, error) {
+func (evm *EVM) TransactionReceipt(txid string) (*blockchain.Transaction, error) {
 	Tx, err := evm.client.TransactionReceipt(context.Background(), common.HexToHash(txid))
 	if err != nil {
 		logger.Log.Warnf("Error getting transaction receipt for tx %s: %s", txid, err)
 		return nil, err
 	}
-	return Tx, nil
+
+	logs := make([]*blockchain.Logs, len(Tx.Logs))
+	for _, log := range Tx.Logs {
+		logs = append(logs, &blockchain.Logs{
+
+			Address: log.Address.Hex(),
+			Topics:  log.Topics,
+			Data:    log.Data,
+		})
+	}
+
+	return &blockchain.Transaction{
+		BlockNumber:     Tx.BlockNumber,
+		ContractAddress: Tx.ContractAddress.String(),
+		Hash:            Tx.TxHash.Hex(),
+		Logs:            logs,
+		Value:           big.NewInt(0),
+	}, nil
 }
 
 func (evm *EVM) GetTx(address string) (string, error) {

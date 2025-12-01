@@ -1,8 +1,10 @@
 package blockchain
 
 import (
+	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
 )
 
@@ -46,4 +48,18 @@ type Address struct {
 	Currency CurrencyType
 	Callback string
 	Timeout  time.Time
+}
+
+type Logs struct {
+	Address string
+	Topics  []common.Hash
+	Data    []byte
+}
+
+type Transaction struct {
+	BlockNumber     *big.Int
+	ContractAddress string
+	Hash            string
+	Logs            []*Logs
+	Value           *big.Int
 }

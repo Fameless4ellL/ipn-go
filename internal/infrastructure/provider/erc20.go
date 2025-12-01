@@ -6,7 +6,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 type ERC20[T blockchain.API] struct {
@@ -34,7 +33,7 @@ func (w *ERC20[T]) GetPendingBalance(wallet string) bool {
 	return Balance.Cmp(big.NewFloat(0)) > 0
 }
 
-func (w *ERC20[T]) Checklogs(tx *types.Receipt, address string) (string, bool) {
+func (w *ERC20[T]) Checklogs(tx *blockchain.Transaction, address string) (string, bool) {
 	for _, log := range tx.Logs {
 
 		if len(log.Topics) < 3 {
@@ -63,7 +62,7 @@ func (w *ERC20[T]) Checklogs(tx *types.Receipt, address string) (string, bool) {
 			new(big.Float).SetInt(value),
 			scale,
 		).Text('f', 18)
-		isStuck := tx.ContractAddress != w.Address
+		isStuck := tx.ContractAddress != w.Address.String()
 
 		return usdt, isStuck
 	}
@@ -79,7 +78,7 @@ func (w *ERC20[T]) IsTransactionMatch(address string, txid string) (string, bool
 
 	_Tx, err := w.client.TransactionByHash(txid)
 	if err == nil {
-		Tx.ContractAddress = *_Tx.To()
+		Tx.ContractAddress = _Tx.ContractAddress
 	}
 
 	usdt, isStuck := w.Checklogs(Tx, address)
