@@ -1,34 +1,31 @@
 package utils
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"time"
 
 	"go-blocker/internal/pkg/config"
 	logger "go-blocker/internal/pkg/log"
+
+	"resty.dev/v3"
 )
 
-var Client = &http.Client{
-	Timeout: 5 * time.Second,
-
-	Transport: &http.Transport{
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		DialContext: (&net.Dialer{
-			Timeout:   5 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).DialContext,
-	},
+// police for 200 to 300 is true otherwise false
+func CircuitBreaker3xxPolicy(resp *http.Response) bool {
+	return resp.StatusCode > 299
 }
 
-func Send(payload map[string]interface{}, url string) {
-	// make a semaphore to limit concurrent callbacks
+func NewClient() *resty.Client {
+	var cb = resty.NewCircuitBreaker().
+		SetPolicies(CircuitBreaker3xxPolicy)
+
+	return resty.New().
+		SetCircuitBreaker(cb).
+		SetTimeout(5 * time.Second)
+}
+
+func Send(payload map[string]any, url string) {
 	if url != "" {
 		go SendRequest(url, payload)
 	}
@@ -37,7 +34,7 @@ func Send(payload map[string]interface{}, url string) {
 	}
 }
 
-func SendRequest(url string, payload map[string]interface{}) {
+func SendRequest(url string, payload map[string]any) {
 	resp, err := Callback(url, payload)
 	if err != nil {
 		logger.Log.Debugf("Failed to send callback: %v", err)
@@ -46,7 +43,7 @@ func SendRequest(url string, payload map[string]interface{}) {
 	defer resp.Body.Close()
 }
 
-func Telegram(payload map[string]interface{}, chatid string) {
+func Telegram(payload map[string]any, chatid string) {
 	if config.BotToken == "" || config.ChatId == "" {
 		logger.Log.Infoln("Telegram bot token or chat ID not set")
 		return
@@ -72,50 +69,29 @@ func Telegram(payload map[string]interface{}, chatid string) {
 	// Telegram API endpoint
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", config.BotToken)
 
-	// Prepare request body
-	body := map[string]interface{}{
-		"chat_id": chatid,
-		"text":    message,
-	}
-	jsonData, _ := json.Marshal(body)
-
-	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonData))
-	if err != nil {
-		logger.Log.Infof("Telegram: Failed to create request: %v", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := Retry(req, 3)
+	Client := NewClient()
+	req, err := Client.R().
+		SetBody(map[string]any{
+			"chat_id": chatid,
+			"text":    message,
+		}).
+		SetHeader("Content-Type", "application/json").
+		Post(url)
 	if err != nil {
 		logger.Log.Debugf("Telegram: Failed to send message: %v", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer req.Body.Close()
 }
 
-func Callback(url string, payload map[string]interface{}) (*http.Response, error) {
-	jsonData, _ := json.Marshal(payload)
-	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonData))
+func Callback(url string, payload map[string]any) (*resty.Response, error) {
+	Client := NewClient()
+	req, err := Client.R().
+		SetBody(payload).
+		SetHeader("Content-Type", "application/json").
+		Post(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := Retry(req, 3)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to retry request: %v", err)
-	}
-	return resp, nil
-}
-
-func Retry(req *http.Request, maxRetries int) (*http.Response, error) {
-	for i := 0; i < maxRetries; i++ {
-		resp, err := Client.Do(req)
-		if err == nil && resp.StatusCode == http.StatusOK {
-			return resp, nil
-		}
-		time.Sleep(time.Duration(i+1) * time.Second) // backoff
-	}
-	return nil, fmt.Errorf("request failed after %d retries", maxRetries)
+	return req, nil
 }

@@ -57,7 +57,7 @@ func (w *Worker) executeCheck() {
 
 		if addr.Timeout.Before(time.Now()) {
 			log.Printf("INFO: Skipping address %s due to timeout", addr.Address)
-			utils.Send(map[string]interface{}{
+			utils.Send(map[string]any{
 				"status":          payment.Timeout,
 				"address":         addr.Address,
 				"stuck":           false,
@@ -85,7 +85,7 @@ func (w *Worker) executeCheck() {
 				log.Printf("ERROR: No latest tx found for address %s", addr.Address)
 				continue
 			}
-			utils.Send(map[string]interface{}{
+			utils.Send(map[string]any{
 				"status":          payment.Received,
 				"address":         addr.Address,
 				"stuck":           isstuck,
