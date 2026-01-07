@@ -4,6 +4,7 @@ import (
 	"go-blocker/internal/infrastructure/payment"
 	"go-blocker/internal/pkg/config"
 	logger "go-blocker/internal/pkg/log"
+	"log/slog"
 
 	"github.com/glebarez/sqlite" // Pure Go SQLite driver
 	_ "github.com/joho/godotenv/autoload"
@@ -18,18 +19,18 @@ func New() *gorm.DB {
 	}
 	// Initialize the database connection
 	if config.DBURL == "" {
-		logger.Log.Fatal("DB_URL environment variable is not set")
+		logger.Log.Error("DB_URL environment variable is not set")
 	}
 	// Use SQLite for simplicity, but you can change this to any other database driver
 	db, err := gorm.Open(sqlite.Open(config.DBURL), &gorm.Config{})
 	if err != nil {
-		logger.Log.Fatal("failed to connect database:", err)
+		logger.Log.Error("failed to connect database", slog.String("error", err.Error()))
 	}
 
 	// Auto-migrate the schema
 	err = db.AutoMigrate(&payment.PaymentModel{})
 	if err != nil {
-		logger.Log.Fatal("failed to migrate schema:", err)
+		logger.Log.Error("failed to migrate schema", slog.String("error", err.Error()))
 	}
 
 	return db

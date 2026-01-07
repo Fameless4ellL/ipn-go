@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	logger "go-blocker/internal/pkg/log"
 	"io"
+	"log/slog"
 )
 
 type Action struct {
@@ -42,20 +43,20 @@ func TraceBlock(node string, blocknum string) ([]TraceResult, error) {
 	}
 	resp, err := Callback(node, payload)
 	if err != nil {
-		logger.Log.Debugf("Failed to send callback: %v", err)
+		logger.Log.Debug("failed to send callback", slog.Any("error", err))
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logger.Log.Debugf("Failed to read callback: %v", err)
+		logger.Log.Debug("failed to read callback", slog.Any("error", err))
 		return nil, err
 	}
 
 	var rpcResp JSONRPCResponse
 	if err := json.Unmarshal(body, &rpcResp); err != nil {
-		logger.Log.Debugf("Failed to parse body callback: %v", err)
+		logger.Log.Debug("failed to parse body callback", slog.Any("error", err))
 		return nil, err
 	}
 

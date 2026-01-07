@@ -5,6 +5,7 @@ import (
 	"go-blocker/internal/pkg/config"
 	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/pkg/utils"
+	"log/slog"
 	"math/big"
 
 	"github.com/google/uuid"
@@ -61,7 +62,13 @@ func (r *Repository) UpdateStatus(
 			return err
 		}
 		if !r.isBalanceSufficient(balance, p.Amount) {
-			logger.Log.Debugf("Payment %s: balance %s is less than expected %s", id, *receivedAmount, p.Amount)
+			logger.Log.Debug("Balance is less than expected",
+				slog.Group("payment",
+					slog.String("payment_id", id.String()),
+					slog.String("received_amount", *receivedAmount),
+					slog.String("expected_amount", p.Amount),
+				),
+			)
 			updates["status"] = string(Mismatch)
 			model.Status = Mismatch
 		}
@@ -107,7 +114,7 @@ func (r *Repository) Delete(id uuid.UUID) {
 func (s *Repository) isBalanceSufficient(balance *big.Float, expected string) bool {
 	expectedBig, err := new(big.Float).SetString(expected)
 	if !err {
-		logger.Log.Errorf("Invalid expected amount format: %s", expected)
+		logger.Log.Error("Invalid expected amount format", slog.String("expected", expected))
 		return false
 	}
 	tolerance := new(big.Float).SetFloat64(config.BalanceTolerance)

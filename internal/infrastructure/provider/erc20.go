@@ -3,6 +3,7 @@ package provider
 import (
 	"go-blocker/internal/domain/blockchain"
 	logger "go-blocker/internal/pkg/log"
+	"log/slog"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -47,7 +48,14 @@ func (w *ERC20[T]) Checklogs(tx *blockchain.Transaction, address string) (string
 
 		to := common.BytesToAddress(toTopic.Bytes()[12:])
 		if to != common.HexToAddress(address) {
-			logger.Log.Debugf("[%s]: to address not match, expected %s, got %s", w.Name, address, to.Hex())
+			logger.Log.Debug(
+				"[ERC20] address mismatch",
+				slog.Group(string(w.Name),
+					slog.String("id", tx.Hash),
+					slog.String("expected_address", address),
+					slog.String("received_address", to.Hex()),
+				),
+			)
 			continue
 		}
 
@@ -72,7 +80,12 @@ func (w *ERC20[T]) Checklogs(tx *blockchain.Transaction, address string) (string
 func (w *ERC20[T]) IsTransactionMatch(address string, txid string) (string, bool) {
 	Tx, err := w.client.TransactionReceipt(txid)
 	if err != nil {
-		logger.Log.Debugf("[%s]: %s", w.Name, err)
+		logger.Log.Debug(
+			"[ERC20] transaction receipt error",
+			slog.Group(string(w.Name),
+				slog.Any("error", err),
+			),
+		)
 		return "", false
 	}
 
@@ -88,7 +101,12 @@ func (w *ERC20[T]) IsTransactionMatch(address string, txid string) (string, bool
 func (w *ERC20[T]) GetLatestTx(address string) (string, bool) {
 	hash, err := w.client.GetERC20(w.Address.Hex(), address)
 	if err != nil {
-		logger.Log.Warnf("[%s]: %v", w.Name, err)
+		logger.Log.Warn(
+			"[ERC20] failed to get latest transaction",
+			slog.Group(string(w.Name),
+				slog.Any("error", err),
+			),
+		)
 		return "", false
 	}
 	return w.IsTransactionMatch(address, hash)

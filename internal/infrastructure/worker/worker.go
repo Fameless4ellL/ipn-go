@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -53,7 +54,7 @@ func (w *Worker) executeCheck() {
 	addresses := w.Service.Box.List()
 
 	for _, addr := range addresses {
-		logger.Log.Debugf("Checking address: %s", addr.Address)
+		logger.Log.Info("Checking address", slog.String("address", addr.Address))
 
 		if addr.Timeout.Before(time.Now()) {
 			log.Printf("INFO: Skipping address %s due to timeout", addr.Address)

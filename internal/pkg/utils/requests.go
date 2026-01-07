@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -37,7 +38,7 @@ func Send(payload map[string]any, url string) {
 func SendRequest(url string, payload map[string]any) {
 	resp, err := Callback(url, payload)
 	if err != nil {
-		logger.Log.Debugf("Failed to send callback: %v", err)
+		logger.Log.Debug("failed to send callback", slog.Any("error", err))
 		return
 	}
 	defer resp.Body.Close()
@@ -45,7 +46,7 @@ func SendRequest(url string, payload map[string]any) {
 
 func Telegram(payload map[string]any, chatid string) {
 	if config.BotToken == "" || config.ChatId == "" {
-		logger.Log.Infoln("Telegram bot token or chat ID not set")
+		logger.Log.Info("Telegram bot token or chat ID not set")
 		return
 	}
 
@@ -78,7 +79,7 @@ func Telegram(payload map[string]any, chatid string) {
 		SetHeader("Content-Type", "application/json").
 		Post(url)
 	if err != nil {
-		logger.Log.Debugf("Telegram: Failed to send message: %v", err)
+		logger.Log.Debug("failed to send telegram message", slog.Any("error", err))
 		return
 	}
 	defer req.Body.Close()

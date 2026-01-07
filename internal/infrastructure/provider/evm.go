@@ -7,6 +7,7 @@ import (
 	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/pkg/utils"
 	"log"
+	"log/slog"
 	"math/big"
 	"strings"
 
@@ -25,7 +26,11 @@ type EVM struct {
 func (evm *EVM) GetBalance(wallet string) *big.Int {
 	balance, err := evm.client.PendingBalanceAt(context.Background(), common.HexToAddress(wallet))
 	if err != nil {
-		logger.Log.Errorf("Error getting pending balance for address %s: %s", wallet, err)
+		logger.Log.Error(
+			"Error getting pending balance for address",
+			slog.String("wallet", wallet),
+			slog.Any("error", err),
+		)
 		return big.NewInt(0)
 	}
 	return balance
@@ -80,7 +85,7 @@ func (evm *EVM) GetERC20Balance(abi, contract, wallet string) *big.Int {
 func (evm *EVM) TraceBlock(blocknumber, address string) ([]utils.TraceResult, error) {
 	result, err := utils.TraceBlock(evm.url, "0x"+blocknumber)
 	if err != nil {
-		logger.Log.Debugf("No healthy TraceBlock: %s", err)
+		logger.Log.Error("No healthy TraceBlock", slog.Any("error", err))
 		return result, err
 	}
 	return result, nil
@@ -104,7 +109,7 @@ func (evm *EVM) TransactionByHash(txid string) (*blockchain.Transaction, error) 
 func (evm *EVM) TransactionReceipt(txid string) (*blockchain.Transaction, error) {
 	Tx, err := evm.client.TransactionReceipt(context.Background(), common.HexToHash(txid))
 	if err != nil {
-		logger.Log.Warnf("Error getting transaction receipt for tx %s: %s", txid, err)
+		logger.Log.Error("Error getting transaction receipt", slog.String("txid", txid), slog.Any("error", err))
 		return nil, err
 	}
 
@@ -130,10 +135,10 @@ func (evm *EVM) TransactionReceipt(txid string) (*blockchain.Transaction, error)
 func (evm *EVM) GetTx(address string) (string, error) {
 	resp, err := evm.scan.GetTransactions(address, 0, 99999999, 1, 10, "asc", etherscan.InternalTx)
 	if err != nil {
-		logger.Log.Warnf("Internal Error: %v", err)
+		logger.Log.Error("Internal Error", slog.Any("error", err))
 		resp, err = evm.scan.GetTransactions(address, 0, 99999999, 1, 10, "asc", etherscan.NormalTx)
 		if err != nil {
-			logger.Log.Warnf("Normal Error: %v", err)
+			logger.Log.Error("Normal Error", slog.Any("error", err))
 			return "", err
 		}
 		return resp.Result[0].Hash, nil
@@ -145,7 +150,7 @@ func (evm *EVM) GetTx(address string) (string, error) {
 func (evm *EVM) GetERC20(contract, address string) (string, error) {
 	resp, err := evm.scan.GetERC20(contract, address, 0, 99999999, 1, 10, "desc")
 	if err != nil {
-		logger.Log.Warnf("Error: %v", err)
+		logger.Log.Error("Error", slog.Any("error", err))
 		return "", err
 	}
 

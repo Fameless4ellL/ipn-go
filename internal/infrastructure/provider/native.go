@@ -3,6 +3,7 @@ package provider
 import (
 	"go-blocker/internal/domain/blockchain"
 	logger "go-blocker/internal/pkg/log"
+	"log/slog"
 	"math/big"
 	"strings"
 )
@@ -31,7 +32,14 @@ func (w *Native[T]) CheckInternalTxs(Tx *blockchain.Transaction, address string)
 
 	result, err := w.client.TraceBlock(blocknumberHex, address)
 	if err != nil {
-		logger.Log.Debugf("[%s]: %s", w.Name, err)
+		logger.Log.Error(
+			"Error",
+			slog.Group(string(w.Name),
+				slog.String("blocknumber", blocknumberHex),
+				slog.String("address", address),
+				slog.Any("error", err),
+			),
+		)
 		return "", false
 	}
 	for _, tx := range result {
@@ -47,7 +55,13 @@ func (w *Native[T]) CheckInternalTxs(Tx *blockchain.Transaction, address string)
 		ethValue := new(big.Float).Quo(weiFloat, big.NewFloat(1e18))
 		ethStr := ethValue.Text('f', 18)
 		txid := tx.TransactionHash
-		logger.Log.Infof("[%s]: Incoming Internal transaction %s, Amount: %s", w.Name, txid, ethStr)
+		logger.Log.Info(
+			"Incoming Internal transaction",
+			slog.Group(string(w.Name),
+				slog.String("txid", txid),
+				slog.String("amount", ethStr),
+			),
+		)
 
 		IsStuck := true
 		return ethStr, IsStuck
@@ -64,14 +78,26 @@ func (w *Native[T]) IsTransactionMatch(address string, txid string) (string, boo
 	if !strings.EqualFold(Tx.ContractAddress, address) {
 		Tx, err := w.client.TransactionReceipt(txid)
 		if err != nil {
-			logger.Log.Warnf("[%s]: Error getting transaction receipt for tx %s: %s", w.Name, txid, err)
+			logger.Log.Warn(
+				"Error getting transaction receipt",
+				slog.Group(string(w.Name),
+					slog.String("txid", txid),
+					slog.Any("error", err),
+				),
+			)
 			return "", false
 		}
 		return w.CheckInternalTxs(Tx, address)
 	}
 
 	eth := new(big.Float).Quo(new(big.Float).SetInt(Tx.Value), big.NewFloat(1e18)).Text('f', 18)
-	logger.Log.Infof("[%s]: Incoming transaction %s, Amount: %s", w.Name, Tx.Hash, eth)
+	logger.Log.Info(
+		"Incoming transaction",
+		slog.Group(string(w.Name),
+			slog.String("txid", Tx.Hash),
+			slog.String("amount", eth),
+		),
+	)
 
 	return eth, false
 }
@@ -79,7 +105,12 @@ func (w *Native[T]) IsTransactionMatch(address string, txid string) (string, boo
 func (w *Native[T]) GetLatestTx(address string) (string, bool) {
 	hash, err := w.client.GetTx(address)
 	if err != nil {
-		logger.Log.Warnf("Internal Error: %v", err)
+		logger.Log.Warn(
+			"Internal Error",
+			slog.Group(string(w.Name),
+				slog.Any("error", err),
+			),
+		)
 	}
 
 	return w.IsTransactionMatch(address, hash)
