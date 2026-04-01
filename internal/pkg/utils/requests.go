@@ -23,7 +23,6 @@ func NewClient() *resty.Client {
 
 	return resty.New().
 		SetCircuitBreaker(cb).
-		SetProxy("socks5://telegramik:telegramik@72.56.93.128:1080").
 		SetTimeout(5 * time.Second)
 }
 
