@@ -23,7 +23,7 @@ func NewClient() *resty.Client {
 
 	return resty.New().
 		SetCircuitBreaker(cb).
-		SetTimeout(5 * time.Second)
+		SetTimeout(15 * time.Second)
 }
 
 func Send(payload map[string]any, url string) {

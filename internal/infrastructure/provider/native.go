@@ -44,9 +44,17 @@ func (w *Native[T]) CheckInternalTxs(Tx *blockchain.Transaction, address string)
 	}
 	for _, tx := range result {
 		if !strings.EqualFold(Tx.Hash, tx.TransactionHash) {
+			slog.Debug("tx hash mismatch",
+				slog.String("tx.Hash", Tx.Hash),
+				slog.String("tx.TransactionHash", tx.TransactionHash),
+			)
 			continue
 		}
 		if !strings.EqualFold(tx.Action.To, address) {
+			slog.Debug("tx to address mismatch",
+				slog.String("tx.Action.To", tx.Action.To),
+				slog.String("address", address),
+			)
 			continue
 		}
 		wei := new(big.Int)
