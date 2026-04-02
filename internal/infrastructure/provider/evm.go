@@ -113,7 +113,7 @@ func (evm *EVM) TransactionReceipt(txid string) (*blockchain.Transaction, error)
 		return nil, err
 	}
 
-	logs := make([]*blockchain.Logs, len(Tx.Logs))
+	logs := make([]*blockchain.Logs, 0, len(Tx.Logs))
 	for _, log := range Tx.Logs {
 		logs = append(logs, &blockchain.Logs{
 

@@ -1,10 +1,12 @@
 package provider
 
 import (
+	"fmt"
 	"go-blocker/internal/domain/blockchain"
 	logger "go-blocker/internal/pkg/log"
 	"log/slog"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -36,7 +38,7 @@ func (w *ERC20[T]) GetPendingBalance(wallet string) bool {
 
 func (w *ERC20[T]) Checklogs(tx *blockchain.Transaction, address string) (string, bool) {
 	for _, log := range tx.Logs {
-
+		fmt.Printf("log: %+v\n", log)
 		if len(log.Topics) < 3 {
 			continue
 		}
@@ -70,9 +72,13 @@ func (w *ERC20[T]) Checklogs(tx *blockchain.Transaction, address string) (string
 			new(big.Float).SetInt(value),
 			scale,
 		).Text('f', 18)
-		isStuck := tx.ContractAddress != w.Address.String()
-
-		return usdt, isStuck
+		fmt.Printf("usdt: %s\n", strings.Compare(tx.ContractAddress, w.Address.String()))
+		fmt.Printf("tx.ContractAddress: %v\n", tx.ContractAddress)
+		fmt.Printf("w.Address.String(): %v\n", w.Address.String())
+		if strings.Compare(tx.ContractAddress, w.Address.String()) != 0 {
+			return usdt, true
+		}
+		return usdt, false
 	}
 	return "", false
 }
