@@ -1,321 +1,360 @@
 {
-    "swagger": "2.0",
-    "info": {
-        "description": "This is the API documentation for the Go-Blocker service.",
-        "title": "Go-Blocker API",
-        "contact": {
-            "name": "Go-Blocker Support",
-            "url": "https://example.com",
-            "email": "test@mail.ru"
-        },
-        "version": "0.1"
+  "swagger": "2.0",
+  "info": {
+    "description": "This is the API documentation for the Go-Blocker service.",
+    "title": "Go-Blocker API",
+    "contact": {
+      "name": "Go-Blocker Support",
+      "url": "https://example.com",
+      "email": "test@mail.ru"
     },
-    "paths": {
-        "/health": {
-            "get": {
-                "description": "Returns service status and database connectivity.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "system"
-                ],
-                "summary": "Health check",
-                "responses": {
-                    "200": {
-                        "description": "Service is healthy",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
+    "version": "0.1"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "description": "Returns service status and database connectivity.",
+        "produces": ["application/json"],
+        "tags": ["system"],
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "schema": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
             }
-        },
-        "/payment/check/transaction": {
-            "post": {
-                "description": "Check if a transaction meets the payment requirements",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "payment"
-                ],
-                "summary": "Check a transaction",
-                "parameters": [
-                    {
-                        "description": "Check transaction request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/payment.CheckTxRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/payment.CheckTxResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request format",
-                        "schema": {
-                            "$ref": "#/definitions/payment.InvalidRequest"
-                        }
-                    },
-                    "422": {
-                        "description": "Invalid address format",
-                        "schema": {
-                            "$ref": "#/definitions/payment.InvalidAddress"
-                        }
-                    },
-                    "503": {
-                        "description": "failed to check transaction",
-                        "schema": {
-                            "$ref": "#/definitions/payment.FailedToFind"
-                        }
-                    }
-                }
-            }
-        },
-        "/payment/find/transaction": {
-            "post": {
-                "description": "Find the latest transaction for a given address",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "payment"
-                ],
-                "summary": "Find the latest transaction",
-                "parameters": [
-                    {
-                        "description": "Check transaction request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/payment.FindTxRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/payment.CheckTxResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request format",
-                        "schema": {
-                            "$ref": "#/definitions/payment.InvalidRequest"
-                        }
-                    },
-                    "422": {
-                        "description": "Invalid address format",
-                        "schema": {
-                            "$ref": "#/definitions/payment.InvalidAddress"
-                        }
-                    },
-                    "503": {
-                        "description": "failed to find latest transaction",
-                        "schema": {
-                            "$ref": "#/definitions/payment.FailedToFind"
-                        }
-                    }
-                }
-            }
-        },
-        "/payment/webhook": {
-            "post": {
-                "description": "Set up a webhook to monitor payments to a specific address",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "payment"
-                ],
-                "summary": "Set up a payment webhook",
-                "parameters": [
-                    {
-                        "description": "Webhook setup request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/payment.WebhookRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request format",
-                        "schema": {
-                            "$ref": "#/definitions/payment.InvalidRequest"
-                        }
-                    },
-                    "422": {
-                        "description": "Invalid address format",
-                        "schema": {
-                            "$ref": "#/definitions/payment.InvalidAddress"
-                        }
-                    }
-                }
-            }
+          }
         }
+      }
     },
-    "definitions": {
-        "internal_application_payment.Status": {
-            "type": "string",
-            "enum": [
-                "pending",
-                "received",
-                "completed",
-                "timeout",
-                "failed",
-                "mismatch"
-            ],
-            "x-enum-varnames": [
-                "Pending",
-                "Received",
-                "Completed",
-                "Timeout",
-                "Failed",
-                "Mismatch"
-            ]
-        },
-        "payment.CheckTxRequest": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string",
-                    "example": "0xabc123..."
-                },
-                "currency": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/payment.CurrencyType"
-                        }
-                    ],
-                    "example": "USDT"
-                },
-                "txid": {
-                    "type": "string",
-                    "example": "0xabc123..."
-                }
+    "/payment/check/transaction": {
+      "post": {
+        "description": "Check if a transaction meets the payment requirements",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "tags": ["payment"],
+        "summary": "Check a transaction",
+        "parameters": [
+          {
+            "description": "Check transaction request",
+            "name": "request",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/go-blocker_internal_application_payment.CheckTxRequest"
             }
-        },
-        "payment.CheckTxResponse": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/internal_application_payment.Status"
-                }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/go-blocker_internal_application_payment.CheckTxResponse"
             }
-        },
-        "payment.CurrencyType": {
-            "type": "string",
-            "enum": [
-                "ETH",
-                "USDT",
-                "USDC"
-            ],
-            "x-enum-varnames": [
-                "ETH",
-                "USDT",
-                "USDC"
-            ]
-        },
-        "payment.FailedToFind": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string",
-                    "example": "failed to find latest transaction"
-                }
+          },
+          "400": {
+            "description": "Invalid request format",
+            "schema": {
+              "$ref": "#/definitions/internal_interface_http_handler.InvalidRequest"
             }
-        },
-        "payment.FindTxRequest": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string",
-                    "format": "hex",
-                    "example": "0xabc123..."
-                },
-                "currency": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/payment.CurrencyType"
-                        }
-                    ],
-                    "example": "USDT"
-                }
+          },
+          "422": {
+            "description": "Invalid address format",
+            "schema": {
+              "$ref": "#/definitions/internal_interface_http_handler.InvalidAddress"
             }
-        },
-        "payment.InvalidAddress": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string",
-                    "example": "Invalid address format"
-                }
+          },
+          "503": {
+            "description": "failed to check transaction",
+            "schema": {
+              "$ref": "#/definitions/internal_interface_http_handler.FailedToFind"
             }
-        },
-        "payment.InvalidRequest": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string",
-                    "example": "invalid request"
-                }
-            }
-        },
-        "payment.WebhookRequest": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string"
-                },
-                "callback_url": {
-                    "type": "string"
-                },
-                "currency": {
-                    "description": "Network     string `json:\"network\"`",
-                    "type": "string"
-                },
-                "timeout": {
-                    "description": "Amount      string `json:\"amount\"`",
-                    "type": "integer"
-                }
-            }
+          }
         }
+      }
+    },
+    "/payment/find/transaction": {
+      "post": {
+        "description": "Find the latest transaction for a given address",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "tags": ["payment"],
+        "summary": "Find the latest transaction",
+        "parameters": [
+          {
+            "description": "Check transaction request",
+            "name": "request",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/go-blocker_internal_application_payment.FindTxRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/go-blocker_internal_application_payment.CheckTxResponse"
+            }
+          },
+          "400": {
+            "description": "Invalid request format",
+            "schema": {
+              "$ref": "#/definitions/internal_interface_http_handler.InvalidRequest"
+            }
+          },
+          "422": {
+            "description": "Invalid address format",
+            "schema": {
+              "$ref": "#/definitions/internal_interface_http_handler.InvalidAddress"
+            }
+          },
+          "503": {
+            "description": "failed to find latest transaction",
+            "schema": {
+              "$ref": "#/definitions/internal_interface_http_handler.FailedToFind"
+            }
+          }
+        }
+      }
+    },
+    "/payment/rm": {
+      "delete": {
+        "description": "Delete a payment by ID",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "tags": ["payment"],
+        "summary": "Delete",
+        "parameters": [
+          {
+            "description": "Delete request",
+            "name": "request",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/go-blocker_internal_application_payment.DeleteRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request format",
+            "schema": {
+              "$ref": "#/definitions/internal_interface_http_handler.InvalidRequest"
+            }
+          },
+          "422": {
+            "description": "Invalid address format",
+            "schema": {
+              "$ref": "#/definitions/internal_interface_http_handler.InvalidAddress"
+            }
+          },
+          "503": {
+            "description": "failed to find: ...",
+            "schema": {
+              "$ref": "#/definitions/internal_interface_http_handler.FailedToFind"
+            }
+          }
+        }
+      }
+    },
+    "/payment/webhook": {
+      "post": {
+        "description": "Set up a webhook to monitor payments to a specific address",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "tags": ["payment"],
+        "summary": "Set up a payment webhook",
+        "parameters": [
+          {
+            "description": "Webhook setup request",
+            "name": "request",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/go-blocker_internal_application_payment.WebhookRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request format",
+            "schema": {
+              "$ref": "#/definitions/internal_interface_http_handler.InvalidRequest"
+            }
+          },
+          "422": {
+            "description": "Invalid address format",
+            "schema": {
+              "$ref": "#/definitions/internal_interface_http_handler.InvalidAddress"
+            }
+          }
+        }
+      }
     }
+  },
+  "definitions": {
+    "go-blocker_internal_application_payment.CheckTxRequest": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "example": "0xabc123..."
+        },
+        "currency": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/go-blocker_internal_domain_blockchain.CurrencyType"
+            }
+          ],
+          "example": "USDT"
+        },
+        "network": {
+          "type": "string",
+          "example": "ethereum"
+        },
+        "txid": {
+          "type": "string",
+          "example": "0xabc123..."
+        }
+      }
+    },
+    "go-blocker_internal_application_payment.CheckTxResponse": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/go-blocker_internal_domain_payment.Status"
+        }
+      }
+    },
+    "go-blocker_internal_application_payment.DeleteRequest": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "format": "hex",
+          "example": "0xabc123..."
+        }
+      }
+    },
+    "go-blocker_internal_application_payment.FindTxRequest": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "format": "hex",
+          "example": "0xabc123..."
+        },
+        "currency": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/go-blocker_internal_domain_blockchain.CurrencyType"
+            }
+          ],
+          "example": "USDT"
+        },
+        "network": {
+          "type": "string",
+          "example": "ethereum"
+        }
+      }
+    },
+    "go-blocker_internal_application_payment.WebhookRequest": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "callback_url": {
+          "type": "string"
+        },
+        "currency": {
+          "type": "string"
+        },
+        "network": {
+          "type": "string",
+          "example": "ethereum"
+        },
+        "timeout": {
+          "type": "integer"
+        }
+      }
+    },
+    "go-blocker_internal_domain_blockchain.CurrencyType": {
+      "type": "string",
+      "enum": ["ETH", "BNB", "USDT", "BUSD", "USDC", "SOL", "LTC"],
+      "x-enum-varnames": ["ETH", "BNB", "USDT", "BUSD", "USDC", "SOL", "LTC"]
+    },
+    "go-blocker_internal_domain_payment.Status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "received",
+        "completed",
+        "timeout",
+        "failed",
+        "mismatch"
+      ],
+      "x-enum-varnames": [
+        "Pending",
+        "Received",
+        "Completed",
+        "Timeout",
+        "Failed",
+        "Mismatch"
+      ]
+    },
+    "internal_interface_http_handler.FailedToFind": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string",
+          "example": "failed to find latest transaction"
+        }
+      }
+    },
+    "internal_interface_http_handler.InvalidAddress": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string",
+          "example": "Invalid address format"
+        }
+      }
+    },
+    "internal_interface_http_handler.InvalidRequest": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string",
+          "example": "invalid request"
+        }
+      }
+    }
+  }
 }

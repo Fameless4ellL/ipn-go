@@ -58,7 +58,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/payment.CheckTxRequest"
+                            "$ref": "#/definitions/go-blocker_internal_application_payment.CheckTxRequest"
                         }
                     }
                 ],
@@ -66,25 +66,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/payment.CheckTxResponse"
+                            "$ref": "#/definitions/go-blocker_internal_application_payment.CheckTxResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request format",
                         "schema": {
-                            "$ref": "#/definitions/payment.InvalidRequest"
+                            "$ref": "#/definitions/internal_interface_http_handler.InvalidRequest"
                         }
                     },
                     "422": {
                         "description": "Invalid address format",
                         "schema": {
-                            "$ref": "#/definitions/payment.InvalidAddress"
+                            "$ref": "#/definitions/internal_interface_http_handler.InvalidAddress"
                         }
                     },
                     "503": {
                         "description": "failed to check transaction",
                         "schema": {
-                            "$ref": "#/definitions/payment.FailedToFind"
+                            "$ref": "#/definitions/internal_interface_http_handler.FailedToFind"
                         }
                     }
                 }
@@ -110,7 +110,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/payment.FindTxRequest"
+                            "$ref": "#/definitions/go-blocker_internal_application_payment.FindTxRequest"
                         }
                     }
                 ],
@@ -118,25 +118,80 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/payment.CheckTxResponse"
+                            "$ref": "#/definitions/go-blocker_internal_application_payment.CheckTxResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request format",
                         "schema": {
-                            "$ref": "#/definitions/payment.InvalidRequest"
+                            "$ref": "#/definitions/internal_interface_http_handler.InvalidRequest"
                         }
                     },
                     "422": {
                         "description": "Invalid address format",
                         "schema": {
-                            "$ref": "#/definitions/payment.InvalidAddress"
+                            "$ref": "#/definitions/internal_interface_http_handler.InvalidAddress"
                         }
                     },
                     "503": {
                         "description": "failed to find latest transaction",
                         "schema": {
-                            "$ref": "#/definitions/payment.FailedToFind"
+                            "$ref": "#/definitions/internal_interface_http_handler.FailedToFind"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/rm": {
+            "delete": {
+                "description": "Delete a payment by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payment"
+                ],
+                "summary": "Delete",
+                "parameters": [
+                    {
+                        "description": "Delete request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/go-blocker_internal_application_payment.DeleteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request format",
+                        "schema": {
+                            "$ref": "#/definitions/internal_interface_http_handler.InvalidRequest"
+                        }
+                    },
+                    "422": {
+                        "description": "Invalid address format",
+                        "schema": {
+                            "$ref": "#/definitions/internal_interface_http_handler.InvalidAddress"
+                        }
+                    },
+                    "503": {
+                        "description": "failed to find: ...",
+                        "schema": {
+                            "$ref": "#/definitions/internal_interface_http_handler.FailedToFind"
                         }
                     }
                 }
@@ -162,7 +217,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/payment.WebhookRequest"
+                            "$ref": "#/definitions/go-blocker_internal_application_payment.WebhookRequest"
                         }
                     }
                 ],
@@ -179,13 +234,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request format",
                         "schema": {
-                            "$ref": "#/definitions/payment.InvalidRequest"
+                            "$ref": "#/definitions/internal_interface_http_handler.InvalidRequest"
                         }
                     },
                     "422": {
                         "description": "Invalid address format",
                         "schema": {
-                            "$ref": "#/definitions/payment.InvalidAddress"
+                            "$ref": "#/definitions/internal_interface_http_handler.InvalidAddress"
                         }
                     }
                 }
@@ -193,7 +248,117 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "internal_application_payment.Status": {
+        "go-blocker_internal_application_payment.CheckTxRequest": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "0xabc123..."
+                },
+                "currency": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/go-blocker_internal_domain_blockchain.CurrencyType"
+                        }
+                    ],
+                    "example": "USDT"
+                },
+                "network": {
+                    "type": "string",
+                    "example": "ethereum"
+                },
+                "txid": {
+                    "type": "string",
+                    "example": "0xabc123..."
+                }
+            }
+        },
+        "go-blocker_internal_application_payment.CheckTxResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/go-blocker_internal_domain_payment.Status"
+                }
+            }
+        },
+        "go-blocker_internal_application_payment.DeleteRequest": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "format": "hex",
+                    "example": "0xabc123..."
+                }
+            }
+        },
+        "go-blocker_internal_application_payment.FindTxRequest": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "format": "hex",
+                    "example": "0xabc123..."
+                },
+                "currency": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/go-blocker_internal_domain_blockchain.CurrencyType"
+                        }
+                    ],
+                    "example": "USDT"
+                },
+                "network": {
+                    "type": "string",
+                    "example": "ethereum"
+                }
+            }
+        },
+        "go-blocker_internal_application_payment.WebhookRequest": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "callback_url": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "network": {
+                    "type": "string",
+                    "example": "ethereum"
+                },
+                "timeout": {
+                    "type": "integer"
+                }
+            }
+        },
+        "go-blocker_internal_domain_blockchain.CurrencyType": {
+            "type": "string",
+            "enum": [
+                "ETH",
+                "BNB",
+                "USDT",
+                "BUSD",
+                "USDC",
+                "SOL",
+                "LTC"
+            ],
+            "x-enum-varnames": [
+                "ETH",
+                "BNB",
+                "USDT",
+                "BUSD",
+                "USDC",
+                "SOL",
+                "LTC"
+            ]
+        },
+        "go-blocker_internal_domain_payment.Status": {
             "type": "string",
             "enum": [
                 "pending",
@@ -212,52 +377,7 @@ const docTemplate = `{
                 "Mismatch"
             ]
         },
-        "payment.CheckTxRequest": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string",
-                    "example": "0xabc123..."
-                },
-                "currency": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/payment.CurrencyType"
-                        }
-                    ],
-                    "example": "USDT"
-                },
-                "txid": {
-                    "type": "string",
-                    "example": "0xabc123..."
-                }
-            }
-        },
-        "payment.CheckTxResponse": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/internal_application_payment.Status"
-                }
-            }
-        },
-        "payment.CurrencyType": {
-            "type": "string",
-            "enum": [
-                "ETH",
-                "USDT",
-                "USDC"
-            ],
-            "x-enum-varnames": [
-                "ETH",
-                "USDT",
-                "USDC"
-            ]
-        },
-        "payment.FailedToFind": {
+        "internal_interface_http_handler.FailedToFind": {
             "type": "object",
             "properties": {
                 "error": {
@@ -266,25 +386,7 @@ const docTemplate = `{
                 }
             }
         },
-        "payment.FindTxRequest": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string",
-                    "format": "hex",
-                    "example": "0xabc123..."
-                },
-                "currency": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/payment.CurrencyType"
-                        }
-                    ],
-                    "example": "USDT"
-                }
-            }
-        },
-        "payment.InvalidAddress": {
+        "internal_interface_http_handler.InvalidAddress": {
             "type": "object",
             "properties": {
                 "error": {
@@ -293,31 +395,12 @@ const docTemplate = `{
                 }
             }
         },
-        "payment.InvalidRequest": {
+        "internal_interface_http_handler.InvalidRequest": {
             "type": "object",
             "properties": {
                 "error": {
                     "type": "string",
                     "example": "invalid request"
-                }
-            }
-        },
-        "payment.WebhookRequest": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string"
-                },
-                "callback_url": {
-                    "type": "string"
-                },
-                "currency": {
-                    "description": "Network     string ` + "`" + `json:\"network\"` + "`" + `",
-                    "type": "string"
-                },
-                "timeout": {
-                    "description": "Amount      string ` + "`" + `json:\"amount\"` + "`" + `",
-                    "type": "integer"
                 }
             }
         }

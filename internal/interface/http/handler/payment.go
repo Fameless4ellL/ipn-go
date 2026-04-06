@@ -193,11 +193,11 @@ func (h *Handler) HealthHandler(c *gin.Context) {
 // @Accept       json
 // @Param request body payment.DeleteRequest true "Delete request"
 // @Produce      json
-// @Success      200  string "OK"
+// @Success      200  {object} map[string]string "OK"
 // @Failure      400 {object} InvalidRequest "Invalid request format"
 // @Failure      422 {object} InvalidAddress "Invalid address format"
 // @Failure      503 {object} FailedToFind  "failed to find: ..."
-// @Router       /payment/rm
+// @Router       /payment/rm [delete]
 func (h *Handler) DelTX(c *gin.Context) {
 	var req *payment.DeleteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
