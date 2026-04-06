@@ -196,8 +196,8 @@ func (h *Handler) HealthHandler(c *gin.Context) {
 // @Success      200  string "OK"
 // @Failure      400 {object} InvalidRequest "Invalid request format"
 // @Failure      422 {object} InvalidAddress "Invalid address format"
-// @Failure      503 {object} FailedToFind  "failed to find latest transaction"
-// @Router       /payment/find/transaction [post]
+// @Failure      503 {object} FailedToFind  "failed to find: ..."
+// @Router       /payment/rm
 func (h *Handler) DelTX(c *gin.Context) {
 	var req *payment.DeleteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -210,7 +210,7 @@ func (h *Handler) DelTX(c *gin.Context) {
 	}
 	err := h.Service.Delete(req)
 	if err != nil {
-		c.JSON(http.StatusNotFound, FailedToFind{Error: "failed to find latest transaction: " + err.Error()})
+		c.JSON(http.StatusNotFound, FailedToFind{Error: "failed to find: " + err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, "OK")

@@ -71,8 +71,8 @@ func FromDomain(pay *domain.Payment) *PaymentModel {
 	}
 }
 
-func (p *PaymentModel) MakePayload() map[string]interface{} {
-	payload := map[string]interface{}{
+func (p *PaymentModel) MakePayload() map[string]any {
+	payload := map[string]any{
 		"status":          p.Status,
 		"address":         p.Address,
 		"stuck":           p.IsStuck,

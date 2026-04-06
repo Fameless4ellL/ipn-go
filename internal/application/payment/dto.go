@@ -39,3 +39,7 @@ type CheckTxResponse struct {
 	Status payment.Status `json:"status"`
 	Amount string         `json:"amount"`
 }
+
+type DeleteRequest struct {
+	Address string `json:"address" example:"0xabc123..." format:"hex"`
+}
