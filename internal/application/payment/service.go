@@ -89,7 +89,7 @@ func (s *Service) FindLatestTx(req *FindTxRequest) (*CheckTxResponse, error) {
 
 	amount, IsStuck := currency.GetLatestTx(req.Address)
 	if IsStuck {
-		utils.Send(map[string]interface{}{
+		utils.Send(map[string]any{
 			"status":          payment.Received,
 			"address":         req.Address,
 			"stuck":           true,
@@ -110,4 +110,15 @@ func (s *Service) FindLatestTx(req *FindTxRequest) (*CheckTxResponse, error) {
 		}, nil
 	}
 	return nil, fmt.Errorf("no transactions found for address %s", req.Address)
+}
+
+// delete
+func (s *Service) Delete(req *DeleteRequest) error {
+	address, empty := s.Box.Get(req.Address)
+	if empty {
+		return fmt.Errorf("address not found: %s", req.Address)
+	}
+	s.Box.Delete(req.Address)
+	s.Repo.Delete(address.ID)
+	return nil
 }

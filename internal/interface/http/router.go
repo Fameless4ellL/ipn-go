@@ -9,6 +9,8 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
+	"go-blocker/internal/pkg/config"
+
 	"github.com/gin-contrib/cors"
 )
 
@@ -32,7 +34,10 @@ func RegisterRoutes(h *payment.Handler) *gin.Engine {
 			pay := v1.Group("/payment")
 			{
 				pay.POST("/webhook", h.Webhook)
-				// pay.GET("/status/:id", h.Status)
+				if config.Verbose {
+					pay.GET("/status/:id", h.Status)
+					pay.DELETE("/rm", h.DelTX)
+				}
 				pay.POST("/check/transaction", h.CheckTx)
 				pay.POST("/find/transaction", h.FindLatestTx)
 			}

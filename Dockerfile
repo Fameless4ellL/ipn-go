@@ -12,8 +12,7 @@ RUN CGO_ENABLED=1 GOOS=linux go build -o main cmd/api/main.go
 
 FROM alpine:3.20.1 AS prod
 WORKDIR /app
+COPY --from=build /app/.env /app/.env
 COPY --from=build /app/main /app/main
 EXPOSE ${PORT}
 CMD ["./main"]
-
-

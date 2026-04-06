@@ -44,7 +44,7 @@ func (r *Repository) UpdateStatus(
 	if err != nil {
 		return err
 	}
-	updates := map[string]interface{}{
+	updates := map[string]any{
 		"status": string(status),
 	}
 	p.Status = status

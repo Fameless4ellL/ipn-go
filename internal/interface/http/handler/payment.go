@@ -50,7 +50,7 @@ func (h *Handler) Webhook(c *gin.Context) {
 	}
 
 	go utils.Telegram(
-		map[string]interface{}{
+		map[string]any{
 			"status":          domain.Pending,
 			"address":         req.Address,
 			"stuck":           req.Timeout,
@@ -92,14 +92,14 @@ func (h *Handler) Status(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"id":            payment.ID,
-		"status":        payment.Status,
-		"amount":        payment.Amount,
-		"currency":      payment.Currency,
-		"address":       payment.Address,
-		"created_at":    payment.CreatedAt,
-		"stuck":         payment.IsStuck,
-		"callback_url":  payment.CallbackURL,
+		"id":           payment.ID,
+		"status":       payment.Status,
+		"amount":       payment.Amount,
+		"currency":     payment.Currency,
+		"address":      payment.Address,
+		"created_at":   payment.CreatedAt,
+		"stuck":        payment.IsStuck,
+		"callback_url": payment.CallbackURL,
 	})
 }
 
@@ -185,4 +185,33 @@ func (h *Handler) HealthHandler(c *gin.Context) {
 		"status": "OK",
 		"db":     "connected",
 	})
+}
+
+// @Summary      Delete
+// @Description  Delete a payment by ID
+// @Tags         payment
+// @Accept       json
+// @Param request body payment.DeleteRequest true "Delete request"
+// @Produce      json
+// @Success      200  string "OK"
+// @Failure      400 {object} InvalidRequest "Invalid request format"
+// @Failure      422 {object} InvalidAddress "Invalid address format"
+// @Failure      503 {object} FailedToFind  "failed to find latest transaction"
+// @Router       /payment/find/transaction [post]
+func (h *Handler) DelTX(c *gin.Context) {
+	var req *payment.DeleteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, InvalidRequest{Error: "invalid request"})
+		return
+	}
+	if !common.IsHexAddress(req.Address) {
+		c.JSON(http.StatusBadRequest, InvalidAddress{Error: "Invalid address"})
+		return
+	}
+	err := h.Service.Delete(req)
+	if err != nil {
+		c.JSON(http.StatusNotFound, FailedToFind{Error: "failed to find latest transaction: " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, "OK")
 }
