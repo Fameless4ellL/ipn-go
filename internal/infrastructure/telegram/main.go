@@ -42,7 +42,7 @@ func Init(s *application.Service) {
 		Token: config.BotToken,
 		Poller: &tele.Webhook{
 			Endpoint:         &tele.WebhookEndpoint{PublicURL: config.TG_WEBHOOK_PATH},
-			Listen:           "localhost:8888",
+			Listen:           ":8888",
 			IgnoreSetWebhook: true,
 		},
 		Client: customClient,
