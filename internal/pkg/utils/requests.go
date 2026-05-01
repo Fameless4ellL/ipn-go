@@ -68,7 +68,7 @@ func Telegram(payload map[string]any, chatid string) {
 	}
 
 	// Telegram API endpoint
-	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", config.BotToken)
+	url := fmt.Sprintf("%s/bot%s/sendMessage", config.TG_BASE_URL, config.BotToken)
 
 	Client := NewClient()
 	req, err := Client.R().
@@ -76,6 +76,7 @@ func Telegram(payload map[string]any, chatid string) {
 			"chat_id": chatid,
 			"text":    message,
 		}).
+		SetHeader("authorization", config.TELEGRAM_AUTH_BASE_URL).
 		SetHeader("Content-Type", "application/json").
 		Post(url)
 	if err != nil {

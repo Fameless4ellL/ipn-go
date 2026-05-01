@@ -57,7 +57,8 @@ func (evm *EVM) GetERC20Balance(abi, contract, wallet string) *big.Int {
 
 	result, err := evm.client.CallContract(context.Background(), msg, nil)
 	if err != nil {
-		log.Fatalf("CallContract %v", err)
+		logger.Log.Warn("CallContract %v", slog.Any("error", err))
+		return big.NewInt(0)
 	}
 
 	// Unpack returns []interface{} for output parameters

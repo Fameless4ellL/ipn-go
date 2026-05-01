@@ -9,14 +9,17 @@ import (
 )
 
 var (
-	DBURL            string
-	BotToken         string
-	ChatId           string
-	Port             int
-	Verbose          bool
-	BalanceTolerance = 0.01
-	ETHapiKey        string
-	SOLapiKey        string
+	DBURL                  string
+	BotToken               string
+	ChatId                 string
+	Port                   int
+	Verbose                bool
+	BalanceTolerance       = 0.01
+	ETHapiKey              string
+	SOLapiKey              string
+	TG_BASE_URL            string
+	TELEGRAM_AUTH_BASE_URL string
+	TG_WEBHOOK_PATH        string
 )
 
 func Init() {
@@ -27,12 +30,22 @@ func Init() {
 	}
 
 	// Read environment variables
-	DBURL = os.Getenv("DB_URL")
-	BotToken = os.Getenv("BOT_TOKEN")
-	ChatId = os.Getenv("TELEGRAM_CHAT_ID")
-	Port, _ = strconv.Atoi(os.Getenv("PORT"))
-	Verbose, _ = strconv.ParseBool(os.Getenv("VERBOSE"))
-	BalanceTolerance, _ = strconv.ParseFloat(os.Getenv("BALANCE_TOLERANCE"), 64)
-	ETHapiKey = os.Getenv("ETHERSCAN_API_KEY")
-	SOLapiKey = os.Getenv("SOLANA_API_KEY")
+	DBURL = getEnv("DB_URL", "")
+	BotToken = getEnv("BOT_TOKEN", "")
+	ChatId = getEnv("TELEGRAM_CHAT_ID", "")
+	TG_BASE_URL = getEnv("TELEGRAM_BASE_URL", "https://api.telegram.org")
+	TELEGRAM_AUTH_BASE_URL = getEnv("TELEGRAM_AUTH_BASE_URL", "")
+	TG_WEBHOOK_PATH = getEnv("TELEGRAM_WEBHOOK_PATH", "")
+	Port, _ = strconv.Atoi(getEnv("PORT", "8080"))
+	Verbose, _ = strconv.ParseBool(getEnv("VERBOSE", "false"))
+	BalanceTolerance, _ = strconv.ParseFloat(getEnv("BALANCE_TOLERANCE", "0.01"), 64)
+	ETHapiKey = getEnv("ETHERSCAN_API_KEY", "")
+	SOLapiKey = getEnv("SOLANA_API_KEY", "")
+}
+
+func getEnv(key, fallback string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return fallback
 }
