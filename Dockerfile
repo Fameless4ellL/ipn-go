@@ -15,4 +15,5 @@ WORKDIR /app
 COPY --from=build /app/main /app/main
 COPY .env /app/.env
 EXPOSE ${PORT}
+EXPOSE 8888
 CMD ["./main"]
