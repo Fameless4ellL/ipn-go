@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
-	"sync"
 	"time"
 
 	application "go-blocker/internal/application/payment"
@@ -15,7 +14,6 @@ import (
 )
 
 type Worker struct {
-	mu       sync.Mutex
 	Service  *application.Service
 	Interval time.Duration
 }
@@ -32,6 +30,8 @@ func (w *Worker) Start(ctx context.Context) {
 	ticker := time.NewTicker(w.Interval)
 	defer ticker.Stop()
 
+	workchan := make(chan int, 1)
+
 	log.Println("Address tracker started.")
 
 	for {
@@ -40,12 +40,14 @@ func (w *Worker) Start(ctx context.Context) {
 			log.Println("Address tracker stopped.")
 			return
 		case <-ticker.C:
-			go func() {
-				if w.mu.TryLock() {
-					defer w.mu.Unlock()
+			select {
+			case workchan <- 1:
+				go func() {
 					w.executeCheck()
-				}
-			}()
+					<-workchan
+				}()
+			default:
+			}
 		}
 	}
 }
