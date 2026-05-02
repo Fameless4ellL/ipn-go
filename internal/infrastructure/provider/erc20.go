@@ -73,7 +73,7 @@ func (w *ERC20[T]) Checklogs(tx *blockchain.Transaction, address string) (string
 			scale,
 		).Text('f', 18)
 
-		if strings.Compare(tx.ContractAddress, w.Address.String()) != 0 {
+		if !strings.EqualFold(tx.ContractAddress, w.Address.String()) {
 			return usdt, true
 		}
 		return usdt, false
