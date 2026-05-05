@@ -3,15 +3,20 @@ package worker
 import (
 	"context"
 	"fmt"
-	"log"
 	"log/slog"
 	"time"
 
 	application "go-blocker/internal/application/payment"
+	"go-blocker/internal/domain/blockchain"
 	"go-blocker/internal/infrastructure/payment"
 	logger "go-blocker/internal/pkg/log"
 	"go-blocker/internal/pkg/utils"
 )
+
+type Result struct {
+	Data   *map[string]any
+	Delete bool
+}
 
 type Worker struct {
 	Service  *application.Service
@@ -30,76 +35,94 @@ func (w *Worker) Start(ctx context.Context) {
 	ticker := time.NewTicker(w.Interval)
 	defer ticker.Stop()
 
-	workchan := make(chan int, 1)
-
-	log.Println("Address tracker started.")
+	logger.Log.Info("Address tracker started.")
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("Address tracker stopped.")
+			logger.Log.Info("Address tracker stopped.")
 			return
 		case <-ticker.C:
-			select {
-			case workchan <- 1:
-				go func() {
-					w.executeCheck()
-					<-workchan
-				}()
-			default:
-			}
+			w.checkAllAdress()
 		}
 	}
 }
 
-func (w *Worker) executeCheck() {
+
+// Start to check all addresses in the Service box.
+func (w *Worker) checkAllAdress() {
 	addresses := w.Service.Box.List()
-
 	for _, addr := range addresses {
-		logger.Log.Info("Checking address", slog.String("address", addr.Address))
+		result := w.check(addr)
+		if result == nil {
+			continue
+		}
 
-		if addr.Timeout.Before(time.Now()) {
-			log.Printf("INFO: Skipping address %s due to timeout", addr.Address)
+		if result.Data != nil {
 			utils.Send(map[string]any{
+				"address":  addr.Address,
+				"network":  string(addr.Network),
+				"currency": string(addr.Currency),
+				"status":   (*result.Data)["status"],
+				"stuck":    (*result.Data)["stuck"],
+				"amount":   (*result.Data)["received_amount"],
+			}, addr.Callback)
+		}
+
+		if result.Delete {
+			w.Service.Box.Delete(addr.Address)
+			w.Service.Repo.Delete(addr.ID)
+		}
+	}
+}
+
+
+// Check a single address.
+// Returns a Result with data or delete flag.
+//  check address for: 
+//    - timeout will return Delete flag + data for callback
+//    - can't get needed rpc url for choosen currency or network, will return Delete flag
+//    - balance check failed will return null 
+//    - if balance check succeeded, but "stuck" which means that transaction is not simple as expected with Transfer event 
+func (w *Worker) check(addr blockchain.Address) *Result {
+	_, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	logger.Log.Info("Checking address", slog.String("address", addr.Address))
+
+	if addr.Timeout.Before(time.Now()) {
+		logger.Log.Info("Skipping address due to timeout", slog.String("address", addr.Address))
+		return &Result{
+			Data: &map[string]any{
 				"status":          payment.Timeout,
-				"address":         addr.Address,
 				"stuck":           false,
 				"received_amount": "0",
-				"network":         string(addr.Network),
-				"currency":        string(addr.Currency),
-			}, addr.Callback)
-			w.Service.Box.Delete(addr.Address)
-			w.Service.Repo.Delete(addr.ID)
-			continue
+			},
+			Delete: true,
 		}
+	}
 
-		currency, err := w.Service.Provider.GetWatcher(addr.Network, addr.Currency)
-		if err != nil {
-			log.Printf("ERROR: No watcher for %s: %v", addr.Currency, err)
-			w.Service.Box.Delete(addr.Address)
-			w.Service.Repo.Delete(addr.ID)
-			continue
+	currency, err := w.Service.Provider.GetWatcher(addr.Network, addr.Currency)
+	if err != nil {
+		logger.Log.Warn("No watcher for", slog.String("currency", string(addr.Currency)), slog.Any("error", err))
+		return &Result{Delete: true}
+	}
+
+	isbalanced := currency.GetPendingBalance(addr.Address)
+	if isbalanced {
+		amount, isstuck := currency.GetLatestTx(addr.Address)
+		if amount == "" {
+			logger.Log.Info("No latest tx found for address", slog.String("address", addr.Address))
+			return nil
 		}
-
-		isbalanced := currency.GetPendingBalance(addr.Address)
-		if isbalanced {
-			amount, isstuck := currency.GetLatestTx(addr.Address)
-			if amount == "" {
-				log.Printf("ERROR: No latest tx found for address %s", addr.Address)
-				continue
-			}
-			utils.Send(map[string]any{
+		return &Result{
+			Data: &map[string]any{
 				"status":          payment.Received,
-				"address":         addr.Address,
 				"stuck":           isstuck,
 				"received_amount": fmt.Sprintf("%v", amount),
-				"network":         string(addr.Network),
-				"currency":        string(currency.GetName()),
-			}, addr.Callback)
-			w.Service.Box.Delete(addr.Address)
-			w.Service.Repo.Delete(addr.ID)
+			},
+			Delete: true,
 		}
-
-		time.Sleep(1 * time.Second) // Avoid rate limiting
 	}
+	return nil
 }
