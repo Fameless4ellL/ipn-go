@@ -5,12 +5,11 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/google/uuid"
 )
 
 type Manager interface {
-	GetClientForChain(chain ChainType) (*ethclient.Client, string, error)
+	GetClientForChain(chain ChainType) (*Node, string, error)
 }
 
 type Watcher interface {

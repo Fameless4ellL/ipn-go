@@ -1,88 +1,131 @@
 package rpc
 
 import (
-	"log"
-	"sync"
+	"context"
+	"fmt"
+	"log/slog"
+	"reflect"
 	"time"
 
 	domain "go-blocker/internal/domain/blockchain"
+	logger "go-blocker/internal/pkg/log"
 
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
+	"resty.dev/v3"
 )
 
+type Domain map[domain.ChainType][]string
+
+var Domains = Domain{
+	domain.Ethereum: {
+		"https://eth.drpc.org",
+		"https://ethereum-rpc.publicnode.com",
+	},
+	domain.Solana: {
+		"https://api.mainnet-beta.solana.com",
+		"https://solana.drpc.org",
+	},
+	domain.Binance: {
+		"https://bsc.drpc.org",
+	},
+}
+
 type Manager struct {
-	nodes []domain.RPCNode
-	index int
-	mu    sync.Mutex
-}
-
-var ErrAllNodesFailed = &RPCError{"All RPC nodes failed"}
-
-type RPCError struct {
-	Msg string
-}
-
-func (e *RPCError) Error() string {
-	return e.Msg
+	nodes Domain
 }
 
 func NewManager() *Manager {
-	return &Manager{nodes: []domain.RPCNode{
-		{URL: "https://eth.drpc.org", Chain: domain.Ethereum, Healthy: true},
-		{URL: "https://ethereum-rpc.publicnode.com", Chain: domain.Ethereum, Healthy: true},
-		{URL: "https://api.mainnet-beta.solana.com", Chain: domain.Solana, Healthy: true},
-		{URL: "https://bsc.drpc.org", Chain: domain.Binance, Healthy: true},
-		{URL: "https://solana.drpc.org", Chain: domain.Solana, Healthy: true},
-	}}
+	return &Manager{nodes: Domains}
 }
 
-func (m *Manager) GetClientForChain(chain domain.ChainType) (*ethclient.Client, string, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (m *Manager) GetClientForChain(chain domain.ChainType) (*domain.Node, string, error) {
+	node, _ := m.nodes[chain]
 
-	for i := 0; i < len(m.nodes); i++ {
-		node := m.nodes[m.index]
-		m.index = (m.index + 1) % len(m.nodes)
+	rr, err := resty.NewRoundRobin(node...)
+	if err != nil {
+		logger.Log.Warn("Can't create round robin", slog.String("error", err.Error()))
+		return nil, node[0], err
+	}
 
-		if node.Chain != chain || !node.Healthy {
+	client := resty.New().SetLoadBalancer(rr).SetTimeout(5 * time.Second)
+	HttpClient := client.Client()
+
+	rpcClient, err := rpc.DialOptions(context.Background(), node[0], rpc.WithHTTPClient(HttpClient))
+	if err != nil {
+		logger.Log.Warn("Can't create RPC client", slog.String("error", err.Error()))
+		return nil, node[0], err
+	}
+
+	return NewNode(rr, ethclient.NewClient(rpcClient)), node[0], nil
+}
+
+func NewNode(rr *resty.RoundRobin, client *ethclient.Client) *domain.Node {
+	return &domain.Node{Rr: rr, Client: client}
+}
+
+func Do[T any](node domain.Node, methodName string, args ...any) (T, error) {
+	var zero T
+
+	for i := range 3 {
+		v := reflect.ValueOf(node.Client)
+		method := v.MethodByName(methodName)
+
+		if !method.IsValid() {
 			continue
 		}
 
-		client, err := ethclient.Dial(node.URL)
-		if err == nil {
-			return client, node.URL, nil
+		inputs := make([]reflect.Value, len(args))
+		for i, arg := range args {
+			if arg == nil {
+				inputs[i] = reflect.Zero(method.Type().In(i))
+			} else {
+				inputs[i] = reflect.ValueOf(arg)
+			}
 		}
-		log.Printf("RPC node failed will try to change another: %s (%v)", node.URL, err)
-		m.nodes[m.index].Healthy = false
-		m.nodes[m.index].LastFailure = time.Now()
-	}
 
-	return nil, "", ErrAllNodesFailed
-}
+		results := method.Call(inputs)
 
-func (m *Manager) StartHealthMonitor(interval time.Duration) {
-	go func() {
-		ticker := time.NewTicker(interval)
-		defer ticker.Stop()
+		if len(results) == 0 {
+			continue
+		}
 
-		for range ticker.C {
-			m.mu.Lock()
-			for i, node := range m.nodes {
-				if node.Healthy {
+		var decrErr error
+		if len(results) > 1 {
+			lastVal := results[len(results)-1]
+
+			if !lastVal.IsNil() && lastVal.Type().Implements(reflect.TypeOf((*error)(nil)).Elem()) {
+				decrErr = lastVal.Interface().(error)
+				logger.Log.Warn("method %s returned an error: %v", methodName, decrErr, slog.Int("attempt", i))
+
+				url, err := node.Rr.Next()
+				if err != nil {
+					logger.Log.Warn("Can't get next URL from round robin", slog.String("error", err.Error()))
 					continue
 				}
 
-				client, err := ethclient.Dial(node.URL)
-				if err == nil {
-					log.Printf("RPC node recovered: %s", node.URL)
-					m.nodes[i].Healthy = true
-					m.nodes[i].LastFailure = time.Time{}
-					client.Close()
-				} else {
-					log.Printf("RPC node still unhealthy: %s", node.URL)
+				client, err := ethclient.Dial(url)
+				if err != nil {
+					logger.Log.Warn("Can't dial URL", slog.String("url", url), slog.String("error", err.Error()))
+					continue
 				}
+				node.Client = client
+
+				continue
 			}
-			m.mu.Unlock()
 		}
-	}()
+
+		val, ok := results[0].Interface().(T)
+		if !ok {
+			if results[0].IsNil() {
+				return zero, decrErr
+			}
+			return zero, fmt.Errorf("method returned %T, but expected %T", results[0].Interface(), zero)
+		}
+
+		return val, decrErr
+
+	}
+
+	return zero, fmt.Errorf("method %s failed after 3 attempts", methodName)
 }

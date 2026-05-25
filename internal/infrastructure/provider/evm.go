@@ -11,20 +11,26 @@ import (
 	"math/big"
 	"strings"
 
+	"go-blocker/internal/rpc"
+
 	"github.com/ethereum/go-ethereum"
 	ABI "github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type EVM struct {
-	client *ethclient.Client
+	client *blockchain.Node
 	scan   *etherscan.Client
 	url    string
 }
 
 func (evm *EVM) GetBalance(wallet string) *big.Int {
-	balance, err := evm.client.PendingBalanceAt(context.Background(), common.HexToAddress(wallet))
+	balance, err := rpc.Do[*big.Int](
+		*evm.client,
+		"PendingBalanceAt",
+		context.Background(),
+		common.HexToAddress(wallet),
+	)
 	if err != nil {
 		logger.Log.Error(
 			"Error getting pending balance for address",
@@ -55,7 +61,13 @@ func (evm *EVM) GetERC20Balance(abi, contract, wallet string) *big.Int {
 		Data: data,
 	}
 
-	result, err := evm.client.CallContract(context.Background(), msg, nil)
+	result, err := rpc.Do[[]byte](
+		*evm.client,
+		"CallContract",
+		context.Background(),
+		msg,
+		nil,
+	)
 	if err != nil {
 		logger.Log.Warn("CallContract %v", slog.Any("error", err))
 		return big.NewInt(0)
@@ -74,7 +86,6 @@ func (evm *EVM) GetERC20Balance(abi, contract, wallet string) *big.Int {
 		}
 	}
 
-	// Fallback: try UnpackIntoInterface
 	var balance *big.Int
 	err = parsedABI.UnpackIntoInterface(&balance, "balanceOf", result)
 	if err != nil {
@@ -93,7 +104,7 @@ func (evm *EVM) TraceBlock(blocknumber, address string) ([]utils.TraceResult, er
 }
 
 func (evm *EVM) TransactionByHash(txid string) (*blockchain.Transaction, error) {
-	Tx, _, err := evm.client.TransactionByHash(context.Background(), common.HexToHash(txid))
+	Tx, _, err := evm.client.Client.TransactionByHash(context.Background(), common.HexToHash(txid))
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +119,7 @@ func (evm *EVM) TransactionByHash(txid string) (*blockchain.Transaction, error) 
 }
 
 func (evm *EVM) TransactionReceipt(txid string) (*blockchain.Transaction, error) {
-	Tx, err := evm.client.TransactionReceipt(context.Background(), common.HexToHash(txid))
+	Tx, err := evm.client.Client.TransactionReceipt(context.Background(), common.HexToHash(txid))
 	if err != nil {
 		logger.Log.Error("Error getting transaction receipt", slog.String("txid", txid), slog.Any("error", err))
 		return nil, err

@@ -5,7 +5,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/google/uuid"
+	"resty.dev/v3"
 )
 
 type ChainType string
@@ -34,13 +36,6 @@ type Chain struct {
 	Currencies map[CurrencyType]Currency
 }
 
-type RPCNode struct {
-	URL         string
-	Chain       ChainType
-	LastFailure time.Time
-	Healthy     bool
-}
-
 type Address struct {
 	ID       uuid.UUID
 	Address  string
@@ -62,4 +57,9 @@ type Transaction struct {
 	Hash            string
 	Logs            []*Logs
 	Value           *big.Int
+}
+
+type Node struct {
+	Rr     *resty.RoundRobin
+	Client *ethclient.Client
 }
