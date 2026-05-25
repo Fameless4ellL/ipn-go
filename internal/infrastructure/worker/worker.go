@@ -48,7 +48,6 @@ func (w *Worker) Start(ctx context.Context) {
 	}
 }
 
-
 // Start to check all addresses in the Service box.
 func (w *Worker) checkAllAdress() {
 	addresses := w.Service.Box.List()
@@ -74,16 +73,17 @@ func (w *Worker) checkAllAdress() {
 			w.Service.Repo.Delete(addr.ID)
 		}
 	}
+	time.Sleep(1 * time.Second)
 }
-
 
 // Check a single address.
 // Returns a Result with data or delete flag.
-//  check address for: 
-//    - timeout will return Delete flag + data for callback
-//    - can't get needed rpc url for choosen currency or network, will return Delete flag
-//    - balance check failed will return null 
-//    - if balance check succeeded, but "stuck" which means that transaction is not simple as expected with Transfer event 
+//
+//	check address for:
+//	  - timeout will return Delete flag + data for callback
+//	  - can't get needed rpc url for choosen currency or network, will return Delete flag
+//	  - balance check failed will return null
+//	  - if balance check succeeded, but "stuck" which means that transaction is not simple as expected with Transfer event
 func (w *Worker) check(addr blockchain.Address) *Result {
 	_, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -109,20 +109,22 @@ func (w *Worker) check(addr blockchain.Address) *Result {
 	}
 
 	isbalanced := currency.GetPendingBalance(addr.Address)
-	if isbalanced {
-		amount, isstuck := currency.GetLatestTx(addr.Address)
-		if amount == "" {
-			logger.Log.Info("No latest tx found for address", slog.String("address", addr.Address))
-			return nil
-		}
-		return &Result{
-			Data: &map[string]any{
-				"status":          payment.Received,
-				"stuck":           isstuck,
-				"received_amount": fmt.Sprintf("%v", amount),
-			},
-			Delete: true,
-		}
+	if !isbalanced {
+		logger.Log.Info("Skipping address due to pending balance", slog.String("address", addr.Address))
+		return nil
 	}
-	return nil
+
+	amount, isstuck := currency.GetLatestTx(addr.Address)
+	if amount == "" {
+		logger.Log.Info("No latest tx found for address", slog.String("address", addr.Address))
+		return nil
+	}
+	return &Result{
+		Data: &map[string]any{
+			"status":          payment.Received,
+			"stuck":           isstuck,
+			"received_amount": fmt.Sprintf("%v", amount),
+		},
+		Delete: true,
+	}
 }
