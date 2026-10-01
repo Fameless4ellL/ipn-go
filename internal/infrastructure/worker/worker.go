@@ -65,6 +65,8 @@ func (w *Worker) checkAllAdress() {
 				"status":   (*result.Data)["status"],
 				"stuck":    (*result.Data)["stuck"],
 				"amount":   (*result.Data)["received_amount"],
+				// "received_amount" is what the Telegram notification reads
+				"received_amount": (*result.Data)["received_amount"],
 			}, addr.Callback)
 		}
 
