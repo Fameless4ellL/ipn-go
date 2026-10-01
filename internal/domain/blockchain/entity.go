@@ -43,6 +43,26 @@ type Address struct {
 	Currency CurrencyType
 	Callback string
 	Timeout  time.Time
+	Amount   string // expected amount
+}
+
+// MinStuckPercent is the minimal share (in percent) of the expected amount
+// that a stuck transaction must carry to be accepted.
+const MinStuckPercent = 5
+
+// IsStuckAmountEnough reports whether received is at least MinStuckPercent of
+// the expected amount. If the expected amount is unknown, the check is skipped.
+func (a Address) IsStuckAmountEnough(received string) bool {
+	expected, ok := new(big.Rat).SetString(a.Amount)
+	if !ok || expected.Sign() <= 0 {
+		return true
+	}
+	got, ok := new(big.Rat).SetString(received)
+	if !ok {
+		return false
+	}
+	min := new(big.Rat).Mul(expected, big.NewRat(MinStuckPercent, 100))
+	return got.Cmp(min) >= 0
 }
 
 type Logs struct {

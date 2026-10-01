@@ -61,15 +61,21 @@ func (h *Handler) Webhook(c *gin.Context) {
 		"1792255940",
 	)
 
+	pay, err := h.Service.Create(&req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create payment"})
+		return
+	}
+
 	h.Service.Box.Set(
 		req.Address,
-		uuid.New(),
+		pay.GetID(),
 		blockchain.ChainType(req.Network),
 		blockchain.CurrencyType(req.Currency),
 		req.CallbackURL,
 		time.Now().Add(time.Duration(req.Timeout)*time.Minute),
+		req.Amount,
 	)
-	h.Service.Create(&req)
 	c.JSON(http.StatusOK, gin.H{"status": "webhook settled"})
 }
 

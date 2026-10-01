@@ -27,7 +27,11 @@ func NewService(
 }
 
 func (s *Service) Create(p *WebhookRequest) (*payment.Payment, error) {
-	pay, err := payment.NewPayment(p.Address, p.Network, p.Currency, "0", p.Timeout, p.CallbackURL)
+	amount := p.Amount
+	if amount == "" {
+		amount = "0"
+	}
+	pay, err := payment.NewPayment(p.Address, p.Network, p.Currency, amount, p.Timeout, p.CallbackURL)
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +60,9 @@ func (s *Service) CheckTx(req *CheckTxRequest) (*CheckTxResponse, error) {
 
 	address, _ := s.Box.Get(req.Address)
 	amount, IsStuck := currency.IsTransactionMatch(req.Address, req.TxID)
+	if IsStuck && !address.IsStuckAmountEnough(amount) {
+		return nil, fmt.Errorf("stuck tx amount %s is less than 5%% of expected %s", amount, address.Amount)
+	}
 	if IsStuck {
 		utils.Send(map[string]interface{}{
 			"status":          payment.Received,
@@ -88,6 +95,9 @@ func (s *Service) FindLatestTx(req *FindTxRequest) (*CheckTxResponse, error) {
 	address, _ := s.Box.Get(req.Address)
 
 	amount, IsStuck := currency.GetLatestTx(req.Address)
+	if IsStuck && !address.IsStuckAmountEnough(amount) {
+		return nil, fmt.Errorf("stuck tx amount %s is less than 5%% of expected %s", amount, address.Amount)
+	}
 	if IsStuck {
 		utils.Send(map[string]any{
 			"status":          payment.Received,
@@ -114,8 +124,8 @@ func (s *Service) FindLatestTx(req *FindTxRequest) (*CheckTxResponse, error) {
 
 // delete
 func (s *Service) Delete(req *DeleteRequest) error {
-	address, empty := s.Box.Get(req.Address)
-	if empty {
+	address, ok := s.Box.Get(req.Address)
+	if !ok {
 		return fmt.Errorf("address not found: %s", req.Address)
 	}
 	s.Box.Delete(req.Address)

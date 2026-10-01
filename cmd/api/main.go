@@ -89,6 +89,7 @@ func main() {
 			domain.CurrencyType(addr.Currency),
 			addr.CallbackURL,
 			time.Now().Add(time.Duration(addr.Timeout)*time.Minute),
+			addr.Amount,
 		)
 	}
 

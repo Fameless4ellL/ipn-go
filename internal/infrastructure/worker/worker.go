@@ -119,6 +119,14 @@ func (w *Worker) check(addr blockchain.Address) *Result {
 		logger.Log.Info("No latest tx found for address", slog.String("address", addr.Address))
 		return nil
 	}
+	if isstuck && !addr.IsStuckAmountEnough(amount) {
+		logger.Log.Info("Stuck tx amount is less than 5% of expected, ignoring",
+			slog.String("address", addr.Address),
+			slog.String("received_amount", amount),
+			slog.String("expected_amount", addr.Amount),
+		)
+		return nil
+	}
 	return &Result{
 		Data: &map[string]any{
 			"status":          payment.Received,

@@ -28,6 +28,7 @@ func (s *AddressStore) Set(
 	c blockchain.CurrencyType,
 	callback string,
 	timeout time.Time,
+	amount string,
 ) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -38,6 +39,7 @@ func (s *AddressStore) Set(
 		Address:  address,
 		Callback: callback,
 		Timeout:  timeout,
+		Amount:   amount,
 	}
 }
 

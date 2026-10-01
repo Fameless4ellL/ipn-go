@@ -10,6 +10,7 @@ type WebhookRequest struct {
 	Address     string `json:"address"`
 	Network     string `json:"network" example:"ethereum" description:"Network (e.g., binance, ethereum)"`
 	Currency    string `json:"currency"`
+	Amount      string `json:"amount" example:"100.5" description:"Expected amount"`
 	Timeout     int    `json:"timeout"`
 	CallbackURL string `json:"callback_url"`
 }

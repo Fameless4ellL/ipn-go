@@ -35,7 +35,7 @@ type API interface {
 
 type Storage interface {
 	List() []Address
-	Set(address string, id uuid.UUID, n ChainType, c CurrencyType, callback string, timeout time.Time)
+	Set(address string, id uuid.UUID, n ChainType, c CurrencyType, callback string, timeout time.Time, amount string)
 	Get(string) (Address, bool)
 	Delete(address string)
 }

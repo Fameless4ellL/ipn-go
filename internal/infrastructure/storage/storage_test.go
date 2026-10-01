@@ -16,7 +16,7 @@ func TestAddressStore_SetGetDeleteList(t *testing.T) {
     addr := "0xAbCdEf0123456789"
     now := time.Now().Add(1 * time.Hour)
 
-    s.Set(addr, id, blockchain.Ethereum, blockchain.ETH, "http://cb", now)
+    s.Set(addr, id, blockchain.Ethereum, blockchain.ETH, "http://cb", now, "")
 
     got, ok := s.Get(addr)
     if !ok {
@@ -53,7 +53,7 @@ func TestAddressStore_ConcurrentAccess(t *testing.T) {
             defer wg.Done()
             id := uuid.New()
             a := uuid.New().String()
-            s.Set(a, id, blockchain.Ethereum, blockchain.ETH, "", time.Now().Add(time.Minute))
+            s.Set(a, id, blockchain.Ethereum, blockchain.ETH, "", time.Now().Add(time.Minute), "")
         }(i)
     }
 
